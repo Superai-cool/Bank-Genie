@@ -1,85 +1,10 @@
 import streamlit as st
 import openai
 import os
-from PIL import Image
-import base64
-from io import BytesIO
+from googletrans import Translator
 
 # ------------------ App Configuration ------------------
-st.set_page_config(
-    page_title="Learn Kannada",
-    page_icon="🗣️",
-    layout="centered"
-)
-
-# ------------------ Styling ------------------
-st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-
-    html, body, [class*="css"] {
-        font-family: 'Poppins', sans-serif;
-        padding-top: 0 !important;
-        margin-top: 0 !important;
-    }
-    section.main > div {
-        padding-top: 1rem !important;
-    }
-    .stButton>button {
-        background-color: #000000 !important;
-        color: white !important;
-        font-size: 16px;
-        border-radius: 10px;
-        padding: 10px 24px;
-        font-weight: bold;
-        width: 100%;
-        border: none;
-    }
-    .stTextArea textarea {
-        font-size: 16px;
-        padding: 12px;
-        border-radius: 10px;
-    }
-    .stTextArea {
-        margin-bottom: -10px;
-    }
-    .centered-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        margin-top: 10px;
-        margin-bottom: 10px;
-        padding: 0 5%;
-    }
-    .title {
-        margin-top: 15px;
-        font-size: 2.2rem;
-        font-weight: 700;
-    }
-    .subtitle {
-        font-size: 1.1rem;
-        font-weight: 500;
-        margin-top: 10px;
-        margin-bottom: 10px;
-    }
-    .desc {
-        font-size: 1rem;
-        max-width: 600px;
-        margin: 0 auto 20px;
-    }
-    .custom-label {
-        text-align: center;
-        font-size: 1rem;
-        font-weight: 500;
-        margin-bottom: 10px;
-        margin-top: -10px;
-    }
-    .markdown-text-container p {
-        margin-bottom: 10px !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="Bank Genie - Internal Assistant", layout="centered")
 
 # ------------------ Load OpenAI API Key ------------------
 api_key = os.getenv("OPENAI_API_KEY")
@@ -88,107 +13,107 @@ if not api_key:
     st.stop()
 openai.api_key = api_key
 
-# ------------------ Embed Logo ------------------
-def image_to_base64(img: Image.Image) -> str:
-    buffered = BytesIO()
-    img.save(buffered, format="PNG")
-    img_str = base64.b64encode(buffered.getvalue()).decode()
-    return img_str
+# ------------------ Styling ------------------
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
-logo = Image.open("image.png")
-encoded_logo = image_to_base64(logo)
+    html, body, [class*="css"] {
+        font-family: 'Poppins', sans-serif;
+        background-color: #f8f9fa;
+    }
+    section.main > div {
+        padding-top: 1rem !important;
+    }
+    .block-container {
+        max-width: 600px;
+        background-color: white;
+        border-radius: 1.5rem;
+        padding: 2rem;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        margin: auto;
+    }
+    .stTextInput>div>div>input {
+        border-radius: 0.75rem;
+        padding: 1rem;
+        font-size: 1rem;
+    }
+    .stButton>button {
+        background-color: #000000;
+        color: white;
+        font-size: 16px;
+        border-radius: 10px;
+        padding: 10px 24px;
+        font-weight: bold;
+        width: 100%;
+        border: none;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# ------------------ App Header ------------------
-st.markdown(
-    f"""
-    <div class="centered-container">
-        <img src='data:image/png;base64,{encoded_logo}' width='100'>
-        <div class="title">Learn Kannada</div>
-        <div class="subtitle">Your Personal Coach for Easy Kannada Learning</div>
-        <div class="desc">Ask anything in English (or your language) and get simple, step-by-step Kannada guidance to help you learn and speak with confidence.</div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# ------------------ UI Title ------------------
+st.title("🏦 Bank Genie - Internal Q&A Assistant")
+st.markdown("""
+Welcome to **Bank Genie**, your internal multilingual assistant. Ask any bank-related question below. 
 
-# ------------------ Updated Prompt without Hindi Transliteration ------------------
-LEARN_KANNADA_PROMPT = """
-You are "Learn Kannada" – a friendly assistant designed to help kids and beginners learn local, spoken Kannada step by step.
+🔹 Responses will be short, summarized, and include simple examples.  
+🔒 Non-banking queries will be politely declined.
+""")
 
-🟡 Always respond using this four-part format:
+# ------------------ Input ------------------
+user_query = st.text_input("Ask your question (in any language):", max_chars=300)
 
-• **Kannada Translation:** Provide the modern, everyday Kannada word or sentence.
+# ------------------ Translator ------------------
+translator = Translator()
 
-• **Transliteration (English):** Show pronunciation using English letters.
+# ------------------ GPT Prompt ------------------
+BANK_GENIE_PROMPT = """
+You are an internal assistant used only by bank employees. Answer only bank-related questions such as:
+- Account operations (KYC, dormant, joint holders)
+- Cash handling (deposit rules, limits)
+- Loans, credit processing, and documentation
+- NEFT, RTGS, UPI, IMPS, cheque handling
+- Compliance, RBI rules, internal policies
+- Core banking systems and internal tools
+- HR-related internal queries only if tied to bank policies
 
-• **Meaning / Context:** Explain the meaning in very simple English.
+🚫 Never answer unrelated topics (e.g., jokes, weather, news). Reply: "I’m designed to answer only internal bank-related questions. Please ask something related to banking."
 
-• **Example Sentence:** Provide a short, real-life Kannada sentence. Include:
-  - Kannada script  
-  - English transliteration  
-  - English translation
-
-Speak like a local tutor teaching a child. Always use clear, friendly, beginner-level Kannada. Avoid overly formal or classical language.
-
-If the user types something unrelated to Kannada learning, reply gently:
-"Let’s keep learning Kannada together! Ask me anything you want to say in Kannada."
+✅ For valid queries:
+1. Respond with a short, summarized answer (1-3 lines)
+2. Include 1 simple example per answer
+3. Answer in the **same language** as the question
 """
 
 # ------------------ GPT Call ------------------
-def get_kannada_response(query):
+def get_bank_response(query):
     try:
+        detected_lang = translator.detect(query).lang
+
         response = openai.ChatCompletion.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": LEARN_KANNADA_PROMPT},
+                {"role": "system", "content": BANK_GENIE_PROMPT},
                 {"role": "user", "content": query.strip()}
             ],
-            temperature=0.7
+            temperature=0.3
         )
-        content = response.choices[0].message.content.strip()
-
-        result = f"""
-### ✅ Your Kannada Learning Result
-
-{content}
-"""
-        return result
-
+        answer = response.choices[0].message.content.strip()
+        translated_answer = translator.translate(answer, dest=detected_lang).text if detected_lang != 'en' else answer
+        return translated_answer
     except Exception as e:
-        st.error(f"❌ OpenAI API Error:\n\n{e}")
-        return ""
+        st.error(f"❌ GPT Error: {e}")
+        return None
 
-# ------------------ Input UI ------------------
-st.markdown("<div class='custom-label'>💬 What would you like to learn in Kannada?</div>", unsafe_allow_html=True)
-
-query = st.text_area(
-    label="",
-    placeholder="E.g., hello, thank you, I want water, milk, I'm hungry",
-    height=140
-)
-
-# ------------------ Query Preprocessor ------------------
-def preprocess_query(q):
-    q = q.lower().strip()
-    if not q:
-        return ""
-    if any(x in q for x in ["how", "say", "translate", "in kannada", "?"]):
-        return q
-    return f"How do I say '{q}' in Kannada?"
-
-# ------------------ Button ------------------
-if st.button("📝 Tell me in Kannada"):
-    if query.strip():
-        cleaned_query = preprocess_query(query)
-        with st.spinner("Translating and formatting your answer..."):
-            response = get_kannada_response(cleaned_query)
-        if response:
-            st.markdown(response)
-    else:
-        st.warning("⚠️ Please enter a valid question.")
+# ------------------ Output ------------------
+if user_query:
+    with st.spinner("Thinking like a banker..."):
+        reply = get_bank_response(user_query)
+        if reply:
+            st.markdown(f"### ✅ Answer\n{reply}")
 
 # ------------------ Footer ------------------
 st.markdown("""
 ---
-<center><small>✨ Made with ❤️ to help you speak Kannada like a local!</small></center>
+<center><small>🔐 For internal banking use only | Powered by OpenAI & Streamlit</small></center>
 """, unsafe_allow_html=True)

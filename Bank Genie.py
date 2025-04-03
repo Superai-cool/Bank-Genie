@@ -1,7 +1,6 @@
 import streamlit as st
 import openai
 import os
-from googletrans import Translator
 
 # ------------------ App Configuration ------------------
 st.set_page_config(page_title="Bank Genie - Internal Assistant", layout="centered")
@@ -17,7 +16,6 @@ openai.api_key = api_key
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-
     html, body, [class*="css"] {
         font-family: 'Poppins', sans-serif;
         background-color: #f8f9fa;
@@ -51,45 +49,39 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ------------------ UI Title ------------------
+# ------------------ UI Header ------------------
 st.title("🏦 Bank Genie - Internal Q&A Assistant")
 st.markdown("""
-Welcome to **Bank Genie**, your internal multilingual assistant. Ask any bank-related question below. 
+Welcome to **Bank Genie**, your internal multilingual assistant.  
+Ask any bank-related question below.
 
 🔹 Responses will be short, summarized, and include simple examples.  
 🔒 Non-banking queries will be politely declined.
 """)
 
-# ------------------ Input ------------------
-user_query = st.text_input("Ask your question (in any language):", max_chars=300)
-
-# ------------------ Translator ------------------
-translator = Translator()
-
-# ------------------ GPT Prompt ------------------
+# ------------------ Prompt Template ------------------
 BANK_GENIE_PROMPT = """
-You are an internal assistant used only by bank employees. Answer only bank-related questions such as:
-- Account operations (KYC, dormant, joint holders)
-- Cash handling (deposit rules, limits)
-- Loans, credit processing, and documentation
+You are Bank Genie — an internal assistant for bank employees only. You answer only bank-related queries like:
+- Account opening/closure, KYC, dormant accounts
+- Deposits, withdrawals, cash handling rules
 - NEFT, RTGS, UPI, IMPS, cheque handling
-- Compliance, RBI rules, internal policies
-- Core banking systems and internal tools
-- HR-related internal queries only if tied to bank policies
+- Loans, documentation, eligibility
+- Internal tools like Finacle or CBS
+- Internal policies, RBI guidelines, audits
+- Staff-related questions only if tied to internal policies
 
-🚫 Never answer unrelated topics (e.g., jokes, weather, news). Reply: "I’m designed to answer only internal bank-related questions. Please ask something related to banking."
+❌ Do NOT answer anything unrelated to banking. Respond with:
+"I’m designed to answer only internal bank-related questions. Please ask something related to banking."
 
-✅ For valid queries:
-1. Respond with a short, summarized answer (1-3 lines)
-2. Include 1 simple example per answer
-3. Answer in the **same language** as the question
+✅ For valid banking questions:
+- Give a short, summarized answer (1–3 lines)
+- Include 1 simple real-life example
+- Answer in the same language the user asked
 """
 
-# ------------------ GPT Call ------------------
+# ------------------ GPT Answer Function ------------------
 def get_bank_response(query):
     try:
-        detected_lang = translator.detect(query).lang
-
         response = openai.ChatCompletion.create(
             model="gpt-4o",
             messages=[
@@ -98,14 +90,15 @@ def get_bank_response(query):
             ],
             temperature=0.3
         )
-        answer = response.choices[0].message.content.strip()
-        translated_answer = translator.translate(answer, dest=detected_lang).text if detected_lang != 'en' else answer
-        return translated_answer
+        return response.choices[0].message.content.strip()
     except Exception as e:
         st.error(f"❌ GPT Error: {e}")
         return None
 
-# ------------------ Output ------------------
+# ------------------ Input ------------------
+user_query = st.text_input("Ask your question (in any language):", max_chars=300)
+
+# ------------------ Process & Output ------------------
 if user_query:
     with st.spinner("Thinking like a banker..."):
         reply = get_bank_response(user_query)

@@ -1,6 +1,7 @@
 import streamlit as st
 import openai
 import os
+from langdetect import detect
 
 # ------------------ App Configuration ------------------
 st.set_page_config(page_title="Bank Genie - Internal Assistant", layout="centered")
@@ -79,13 +80,23 @@ You are Bank Genie — an internal assistant for bank employees only. You answer
 - Answer in the same language the user asked
 """
 
+# ------------------ Language Detection ------------------
+def detect_user_language(text):
+    try:
+        return detect(text)
+    except:
+        return "en"
+
 # ------------------ GPT Answer Function ------------------
 def get_bank_response(query):
     try:
+        user_lang = detect_user_language(query)
+        lang_instruction = f"Answer the question in this language: {user_lang}."
+
         response = openai.ChatCompletion.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": BANK_GENIE_PROMPT},
+                {"role": "system", "content": f"{BANK_GENIE_PROMPT}\n\n{lang_instruction}"},
                 {"role": "user", "content": query.strip()}
             ],
             temperature=0.3

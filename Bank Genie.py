@@ -47,6 +47,18 @@ st.markdown("""
         width: 100%;
         border: none;
     }
+    .custom-answer {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+    .example-line {
+        margin-top: 1rem;
+        font-style: italic;
+        color: #333333;
+        background-color: #f0f0f0;
+        padding: 10px;
+        border-radius: 8px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -76,7 +88,8 @@ You are Bank Genie — an internal assistant for bank employees only. You answer
 
 ✅ For valid banking questions:
 - Give a short, summarized answer (1–3 lines)
-- Include 1 simple real-life example
+- Include 1 simple real-life example (use Indian context and INR)
+- Keep answer and example on separate lines with space between
 - Answer in the same language the user asked
 """
 
@@ -91,7 +104,7 @@ def detect_user_language(text):
 def get_bank_response(query):
     try:
         user_lang = detect_user_language(query)
-        lang_instruction = f"Answer the question in this language: {user_lang}."
+        lang_instruction = f"Answer the question in this language: {user_lang}. Use Indian context and INR for all examples. Keep the main answer and example clearly separated with a blank line."
 
         response = openai.ChatCompletion.create(
             model="gpt-4o",
@@ -114,7 +127,14 @@ if user_query:
     with st.spinner("Thinking like a banker..."):
         reply = get_bank_response(user_query)
         if reply:
-            st.markdown(f"### ✅ Answer\n{reply}")
+            if "\n\n" in reply:
+                answer_part, example_part = reply.split("\n\n", 1)
+                st.markdown(f"""
+                <div class='custom-answer'>{answer_part.strip()}</div>
+                <div class='example-line'>💡 Example: {example_part.strip()}</div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"### ✅ Answer\n{reply}")
 
 # ------------------ Footer ------------------
 st.markdown("""

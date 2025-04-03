@@ -90,6 +90,7 @@ You are Bank Genie — an internal assistant for bank employees only. You answer
 - Give a short, summarized answer (1–3 lines)
 - Include 1 simple real-life example (use Indian context and INR)
 - Keep answer and example on separate lines with space between
+- Avoid repeating the word "Example" if it’s already used
 - Answer in the same language the user asked
 """
 
@@ -104,7 +105,7 @@ def detect_user_language(text):
 def get_bank_response(query):
     try:
         user_lang = detect_user_language(query)
-        lang_instruction = f"Answer the question in this language: {user_lang}. Use Indian context and INR for all examples. Keep the main answer and example clearly separated with a blank line."
+        lang_instruction = f"Answer the question in this language: {user_lang}. Use Indian context and INR for all examples. Keep the main answer and example clearly separated with a blank line. Do not repeat the word 'Example' if it's already present in the content."
 
         response = openai.ChatCompletion.create(
             model="gpt-4o",
@@ -129,9 +130,10 @@ if user_query:
         if reply:
             if "\n\n" in reply:
                 answer_part, example_part = reply.split("\n\n", 1)
+                example_part_cleaned = example_part.strip().removeprefix("Example:").strip()
                 st.markdown(f"""
                 <div class='custom-answer'>{answer_part.strip()}</div>
-                <div class='example-line'>💡 Example: {example_part.strip()}</div>
+                <div class='example-line'>💡 Example: {example_part_cleaned}</div>
                 """, unsafe_allow_html=True)
             else:
                 st.markdown(f"### ✅ Answer\n{reply}")

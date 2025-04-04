@@ -1,5 +1,5 @@
 import streamlit as st
-from openai import OpenAI
+import openai
 import os
 from langdetect import detect
 
@@ -11,7 +11,8 @@ api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
     st.error("❌ OpenAI API key not found. Please set it in your Streamlit Cloud Secrets or local environment.")
     st.stop()
-client = OpenAI(api_key=api_key)
+
+openai.api_key = api_key
 
 # ------------------ Styling ------------------
 st.markdown("""
@@ -112,7 +113,7 @@ def get_bank_response(query):
 
         lang_instruction = f"Answer the question in this language: {user_lang}. Use Indian context and INR for all examples. Keep the main answer and example clearly separated with a blank line. Do not repeat the word 'Example' if it's already present in the content."
 
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4o",
             messages=[
                 {"role": "system", "content": f"{BANK_GENIE_PROMPT}\n\n{lang_instruction}"},

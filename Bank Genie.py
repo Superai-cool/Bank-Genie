@@ -95,7 +95,7 @@ You are Bank Genie — an internal assistant for bank employees only. You answer
 - Answer in the same language the user asked
 """
 
-# ------------------ Language Detection with Short Text Fallback ------------------
+# ------------------ Language Detection with Short Query Fallback ------------------
 def detect_user_language(text):
     try:
         # Treat very short inputs as English
@@ -110,6 +110,12 @@ def detect_user_language(text):
 # ------------------ GPT Answer Function ------------------
 def get_bank_response(query):
     try:
+        query = query.strip()
+
+        # ✨ Auto-rewrite very short phrases into questions
+        if len(query.split()) <= 3 and not query.endswith("?"):
+            query = f"What is {query}?"
+
         user_lang = detect_user_language(query)
         if user_lang == "blocked":
             return "❌ I can only respond to questions in Indian languages or English. Please rephrase your query."
@@ -120,7 +126,7 @@ def get_bank_response(query):
             model="gpt-4o",
             messages=[
                 {"role": "system", "content": f"{BANK_GENIE_PROMPT}\n\n{lang_instruction}"},
-                {"role": "user", "content": query.strip()}
+                {"role": "user", "content": query}
             ],
             temperature=0.3
         )

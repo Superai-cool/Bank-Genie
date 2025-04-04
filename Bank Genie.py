@@ -6,6 +6,13 @@ from langdetect import detect
 # ------------------ App Configuration ------------------
 st.set_page_config(page_title="Bank Genie - Internal Assistant", layout="centered")
 
+# ------------------ Favicon Setup ------------------
+st.markdown(
+    """
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAMCAQAAADE5DEJ0AAABfklEQVR42u3BwQ2AIAwEwX6lUKD7gEDGROFCiS5QeD2AEK2k4AgAA3w+vksEAAA=" />
+    """, unsafe_allow_html=True
+)
+
 # ------------------ Load OpenAI API Key ------------------
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:

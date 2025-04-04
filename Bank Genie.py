@@ -141,5 +141,5 @@ if user_query:
 # ------------------ Footer ------------------
 st.markdown("""
 ---
-<center><small>🔐 For internal banking use only | Powered by OpenAI & Streamlit</small></center>
+<center><small>🔐 For internal banking use only | Powered by SuperAI Labs </small></center>
 """, unsafe_allow_html=True)

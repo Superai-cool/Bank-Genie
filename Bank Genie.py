@@ -95,9 +95,12 @@ You are Bank Genie — an internal assistant for bank employees only. You answer
 - Answer in the same language the user asked
 """
 
-# ------------------ Language Detection with Filtering ------------------
+# ------------------ Language Detection with Short Text Fallback ------------------
 def detect_user_language(text):
     try:
+        # Treat very short inputs as English
+        if len(text.strip()) < 10:
+            return "en"
         lang_code = detect(text)
         allowed_languages = {"en", "hi", "mr", "ta", "te", "gu", "kn", "bn", "ml", "pa", "or", "ur", "as"}
         return lang_code if lang_code in allowed_languages else "blocked"

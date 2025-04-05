@@ -102,15 +102,15 @@ You are Bank Genie — an internal assistant for bank employees only. You answer
 - Answer in the same language the user asked
 """
 
-# ------------------ Language Detection with Short Query Fallback ------------------
+# ------------------ Updated Language Detection ------------------
 def detect_user_language(text):
     try:
-        # Treat very short inputs as English
-        if len(text.strip()) < 10:
+        text = text.strip()
+        if len(text) < 10:
             return "en"
         lang_code = detect(text)
-        allowed_languages = {"en", "hi", "mr", "ta", "te", "gu", "kn", "bn", "ml", "pa", "or", "ur", "as", "ne", "si", "ml"}
-        return lang_code if lang_code in allowed_languages else "blocked"
+        allowed_languages = {"en", "hi", "mr", "ta", "te", "gu", "kn", "bn", "ml", "pa", "or", "ur", "as", "ne", "si"}
+        return lang_code if lang_code in allowed_languages else "en"
     except:
         return "en"
 
@@ -124,8 +124,6 @@ def get_bank_response(query):
             query = f"What is {query}?"
 
         user_lang = detect_user_language(query)
-        if user_lang == "blocked":
-            return "❌ I can only respond to questions in Indian languages or English. Please rephrase your query."
 
         lang_instruction = f"Answer the question in this language: {user_lang}. Use Indian context and INR for all examples. Keep the main answer and example clearly separated with a blank line. Do not repeat the word 'Example' if it's already present in the content."
 

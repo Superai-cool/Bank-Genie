@@ -6,13 +6,6 @@ from langdetect import detect
 # ------------------ App Configuration ------------------
 st.set_page_config(page_title="Bank Genie - Internal Assistant", layout="centered")
 
-# ------------------ Favicon Setup ------------------
-st.markdown(
-    """
-    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAMCAQAAADE5DEJ0AAABfklEQVR42u3BwQ2AIAwEwX6lUKD7gEDGROFCiS5QeD2AEK2k4AgAA3w+vksEAAA=" />
-    """, unsafe_allow_html=True
-)
-
 # ------------------ Load OpenAI API Key ------------------
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
@@ -76,9 +69,12 @@ st.markdown("""
 Welcome to **Bank Genie**, your internal multilingual assistant.  
 Ask any bank-related question below.
 
-🔹 Responses will be short, summarized, and include simple examples.  
+🔹 Responses can be short or detailed based on your preference  
 🔒 Non-banking queries will be politely declined.
 """)
+
+# ------------------ Answer Style Selector ------------------
+detail_level = st.radio("Choose answer detail level:", ["Short", "Detailed"], index=1)
 
 # ------------------ Prompt Template ------------------
 BANK_GENIE_PROMPT = """
@@ -95,14 +91,26 @@ You are Bank Genie — an internal assistant for bank employees only. You answer
 "I’m designed to answer only internal bank-related questions. Please ask something related to banking."
 
 ✅ For valid banking questions:
+"""
+
+if detail_level == "Short":
+    BANK_GENIE_PROMPT += """
 - Give a short, summarized answer (1–3 lines)
 - Include 1 simple real-life example (use Indian context and INR)
+"""
+else:
+    BANK_GENIE_PROMPT += """
+- Give a clear, helpful answer (up to 5–6 lines)
+- Include 1 proper real-life example with Indian context and INR
+"""
+
+BANK_GENIE_PROMPT += """
 - Keep answer and example on separate lines with space between
 - Avoid repeating the word "Example" if it’s already used
 - Answer in the same language the user asked
 """
 
-# ------------------ Updated Language Detection ------------------
+# ------------------ Language Detection ------------------
 def detect_user_language(text):
     try:
         text = text.strip()
@@ -119,7 +127,6 @@ def get_bank_response(query):
     try:
         query = query.strip()
 
-        # ✨ Auto-rewrite very short phrases into questions
         if len(query.split()) <= 3 and not query.endswith("?"):
             query = f"What is {query}?"
 

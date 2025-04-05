@@ -26,7 +26,7 @@ st.markdown("""
         padding-top: 1rem !important;
     }
     .block-container {
-        max-width: 600px;
+        max-width: 650px;
         background-color: white;
         border-radius: 1.5rem;
         padding: 2rem;
@@ -50,15 +50,16 @@ st.markdown("""
     }
     .custom-answer {
         font-size: 1rem;
+        line-height: 1.8;
         margin-bottom: 1rem;
     }
     .example-line {
-        margin-top: 1rem;
+        margin-top: 1.5rem;
         font-style: italic;
         color: #333333;
         background-color: #f0f0f0;
-        padding: 10px;
-        border-radius: 8px;
+        padding: 12px 14px;
+        border-radius: 10px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -69,7 +70,7 @@ st.markdown("""
 Welcome to **Bank Genie**, your internal multilingual assistant.  
 Ask any bank-related question below.
 
-🔹 Responses can be short or detailed based on your preference  
+🔹 Choose your preferred answer style: Short or Detailed  
 🔒 Non-banking queries will be politely declined.
 """)
 
@@ -100,13 +101,15 @@ if detail_level == "Short":
 """
 else:
     BANK_GENIE_PROMPT += """
-- Give a clear, helpful answer (up to 5–6 lines)
-- Include 1 proper real-life example with Indian context and INR
+- Give a helpful, clear answer in 4–6 bullet points or numbered steps
+- Format the answer with good spacing and line breaks
+- Bold important keywords (like documents, limits, rules)
+- Include 1 proper real-life example using Indian context and INR
 """
 
 BANK_GENIE_PROMPT += """
-- Keep answer and example on separate lines with space between
-- Avoid repeating the word "Example" if it’s already used
+- Keep answer and example on separate lines with spacing
+- Do not repeat the word 'Example' if it’s already used
 - Answer in the same language the user asked
 """
 
@@ -132,7 +135,7 @@ def get_bank_response(query):
 
         user_lang = detect_user_language(query)
 
-        lang_instruction = f"Answer the question in this language: {user_lang}. Use Indian context and INR for all examples. Keep the main answer and example clearly separated with a blank line. Do not repeat the word 'Example' if it's already present in the content."
+        lang_instruction = f"Answer the question in this language: {user_lang}. Use Indian context and INR for all examples. Keep the main answer and example clearly separated with a blank line. Use bullet points or line breaks for longer answers. Bold key terms where useful."
 
         response = openai.ChatCompletion.create(
             model="gpt-4o",

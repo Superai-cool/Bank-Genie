@@ -173,12 +173,12 @@ def clear_all():
         st.session_state.pop(key, None)
     st.rerun()
 
-# ✅ State Defaults
+# ✅ Session State
 st.session_state.setdefault("query", "")
 st.session_state.setdefault("detail_level", "Short")
 st.session_state.setdefault("answer", "")
 
-# ✅ UI
+# ✅ Layout
 st.markdown("<div class='container'>", unsafe_allow_html=True)
 st.markdown("<div class='title'>🏦 Bank Genie</div>", unsafe_allow_html=True)
 st.markdown("<div class='subtitle'>🔐 Internal Assistant for Indian Bank Employees | ⚡ Accurate • ⚙️ Instant • 💼 Professional</div>", unsafe_allow_html=True)
@@ -190,22 +190,41 @@ st.session_state.detail_level = st.selectbox("📏 Choose Answer Format", ["Shor
 st.markdown("""
 <div class="responsive-buttons">
     <div class="btn">
-        <form method="post">
-            <button name="ask_button" type="submit">💬 Ask Bank Genie</button>
-        </form>
+        <button style="
+            width: 100%;
+            background-color: black;
+            color: white;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+        ">💬 Ask Bank Genie</button>
     </div>
     <div class="btn">
-        <form method="post">
-            <button name="clear_button" type="submit">🧹 Clear</button>
-        </form>
+        <button style="
+            width: 100%;
+            background-color: black;
+            color: white;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+        ">🧹 Clear</button>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ✅ Button actions
-if st.session_state.get("ask_button") or st.query_params.get("ask_button"):
+# ✅ Button actions (Streamlit's button handling)
+if st.button("💬 Ask Bank Genie"):
     generate_answer()
-if st.session_state.get("clear_button") or st.query_params.get("clear_button"):
+
+if st.button("🧹 Clear"):
     clear_all()
 
 # ✅ Answer Display

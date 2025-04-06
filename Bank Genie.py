@@ -6,7 +6,7 @@ import random
 # ✅ Set Page Config
 st.set_page_config(page_title="🏦 Bank Genie", layout="centered")
 
-# ✅ Global Styles (Black & White Buttons + Clean Layout)
+# ✅ Global Styles – Black Buttons with White Text + Flat Layout
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
@@ -65,18 +65,9 @@ st.markdown("""
         padding: 0.65rem 1.2rem !important;
         border-radius: 6px !important;
         font-weight: 600 !important;
-        border: none;
-    }
-
-    .stButton > button:first-child {
         background-color: #000000 !important;
         color: white !important;
-    }
-
-    .stButton > button:last-child {
-        background-color: #ffffff !important;
-        color: black !important;
-        border: 1.5px solid black !important;
+        border: none !important;
     }
 
     @media (max-width: 600px) {
@@ -143,12 +134,12 @@ def clear_all():
         st.session_state.pop(key, None)
     st.rerun()
 
-# ✅ Initialize Session State
+# ✅ Session Defaults
 st.session_state.setdefault("query", "")
 st.session_state.setdefault("detail_level", "Short")
 st.session_state.setdefault("answer", "")
 
-# ✅ Main UI
+# ✅ Main App UI
 st.markdown("<div class='container'>", unsafe_allow_html=True)
 
 st.markdown("<div class='title'>🏦 Bank Genie</div>", unsafe_allow_html=True)
@@ -158,6 +149,7 @@ st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=
 
 st.session_state.detail_level = st.radio("📏 Choose Answer Format", ["Short", "Detailed"], horizontal=True)
 
+# ✅ Buttons: Ask + Clear
 st.markdown("<div class='button-row'>", unsafe_allow_html=True)
 col1, col2 = st.columns(2)
 with col1:

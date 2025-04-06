@@ -81,7 +81,8 @@ st.markdown("""
 Welcome to **Bank Genie** — Empowering Bank Teams with Instant, Multilingual Support
 .
 
-🔹 Responses can be short or detailed based on your preference  
+Ask any bank-related question below, and Bank Genie will provide accurate, helpful answers tailored to your preference — whether concise or in-depth.
+
 🔒 Non-banking queries will be politely declined.
 """)
 

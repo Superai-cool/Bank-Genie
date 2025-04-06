@@ -7,13 +7,13 @@ import os
 from io import BytesIO
 from langdetect import detect
 
-# ✅ Page Config
+# Page Config
 st.set_page_config(page_title="🏦 Bank Genie", layout="centered")
 
-# ✅ OpenAI Key
+# OpenAI Key
 openai.api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 
-# ✅ Load PDF from GitHub
+# Load PDF from GitHub
 @st.cache_data
 def load_pdf_from_github(pdf_url):
     response = requests.get(pdf_url)
@@ -26,7 +26,7 @@ def load_pdf_from_github(pdf_url):
 pdf_url = "https://raw.githubusercontent.com/Superai-cool/Bank-Genie/b2724bae6283a1524d3abcfaf80071961441ec11/bank_knowledge_base.pdf"
 knowledge_base = load_pdf_from_github(pdf_url)
 
-# ✅ Translation functions
+# Translation functions
 def maybe_translate_to_english(text):
     try:
         lang = detect(text)
@@ -58,13 +58,13 @@ def maybe_translate_back_to_original(answer_text, lang_code):
     except:
         return answer_text
 
-# ✅ Refine input
+# Refine input
 def refine_query(raw_input):
     prompt = f"""
 You are a helper that improves vague or poorly written banking queries.
 
 Input:
-\"\"\"{raw_input}\"\"\"
+"""{raw_input}"""
 
 Rewritten Question:
 """
@@ -79,7 +79,7 @@ Rewritten Question:
     except:
         return raw_input
 
-# ✅ Build Prompt
+# Build Prompt
 def build_prompt(refined_query, detail_level, lang_code):
     return f"""
 You are Bank Genie, an AI assistant for bank employees.
@@ -89,7 +89,7 @@ If no answer is found, say:
 "I'm only allowed to answer based on our internal knowledge base, and I couldn’t find relevant info for this query."
 
 📘 Knowledge Base:
-\"\"\"{knowledge_base}\"\"\"
+"""{knowledge_base}"""
 
 📝 Format: {"Short summary (1–3 lines) with one Indian example" if detail_level == "Short" else "Detailed explanation (5–6 lines) with example"}
 
@@ -97,10 +97,10 @@ If no answer is found, say:
 Use Indian context and INR. Separate answer and example with a blank line.
 
 QUESTION:
-\"\"\"{refined_query}\"\"\"
+"""{refined_query}"""
 """
 
-# ✅ Answer Generation
+# Generate Answer
 def generate_answer():
     raw_input = st.session_state.query.strip()
     if not raw_input:
@@ -125,24 +125,24 @@ def generate_answer():
     except Exception as e:
         st.error(f"Error: {e}")
 
-# ✅ Clear
+# Clear
 def clear_all():
     for k in ["query", "answer", "detail_level", "lang_code"]:
         st.session_state.pop(k, None)
     st.rerun()
 
-# ✅ Defaults
+# Defaults
 st.session_state.setdefault("query", "")
 st.session_state.setdefault("answer", "")
 st.session_state.setdefault("detail_level", "Short")
 st.session_state.setdefault("lang_code", "en")
 
-# ✅ UI Layout
+# UI Layout
 st.markdown("## 🏦 Bank Genie")
 st.markdown("🔐 Internal Assistant for Indian Bank Employees | ⚡ Accurate • ⚙️ Instant • 💼 Professional")
 
-st.text_area("🔍 Ask a bank-related question", key="query", height=130)
-st.selectbox("📏 Choose Answer Format", ["Short", "Detailed"], key="detail_level")
+st.text_area(" 🔍 Ask a bank-related question", key="query", height=130)
+st.selectbox(" 📏 Choose Answer Format", ["Short", "Detailed"], key="detail_level")
 
 col1, col2 = st.columns(2)
 with col1:
@@ -152,30 +152,53 @@ with col2:
     if st.button("🧹 Clear"):
         clear_all()
 
-# ✅ Output
+# Output
 if st.session_state.answer:
     st.markdown("### ✅ Answer")
 
-    # Try to split answer and example
-    text = st.session_state.answer.strip()
+    full_text = st.session_state.answer.strip()
+
+    # Split on known markers
     split_point = -1
-    for marker in ["For example", "उदाहरणार्थ", "उदाहरण", "उदा.", "उदाहरण:", "उदाहरणासारखे"]:
-        if marker in text:
-            split_point = text.find(marker)
+    markers = ["Example:", "उदाहरणार्थ", "उदाहरण:", "उदा.", "उदाहरणासारखे"]
+    for marker in markers:
+        if marker in full_text:
+            split_point = full_text.find(marker)
             break
 
     if split_point != -1:
-        main = text[:split_point].strip()
-        example = text[split_point:].strip()
+        main_answer = full_text[:split_point].strip()
+        example_part = full_text[split_point:].strip()
     else:
-        main = text
-        example = ""
+        main_answer = full_text
+        example_part = ""
 
-    st.markdown(f"<div style='background:#f3f4f6;padding:1rem;border-radius:8px'>{main}</div>", unsafe_allow_html=True)
-    if example:
-        st.markdown(f"<div style='background:#eef2ff;padding:1rem;border-radius:8px;margin-top:1rem'>{example}</div>", unsafe_allow_html=True)
+    # Answer Box
+    st.markdown("""
+    <div style='font-weight:600; margin-bottom: 0.25rem;'>📘 Answer</div>
+    """, unsafe_allow_html=True)
 
-# ✅ Footer
+    st.markdown(f"""
+    <div style='background-color:#f3f4f6; border:1px solid #d1d5db; padding:1rem; border-radius:10px;
+                font-size:1rem; margin-bottom:1.2rem;'>
+        {main_answer}
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Example Box
+    if example_part:
+        st.markdown("""
+        <div style='font-weight:600; margin-bottom: 0.25rem;'>📌 Example</div>
+        """, unsafe_allow_html=True)
+
+        st.markdown(f"""
+        <div style='background-color:#eef2ff; border:1px solid #c7d2fe; padding:1rem; border-radius:10px;
+                    font-size:1rem;'>
+            {example_part}
+        </div>
+        """, unsafe_allow_html=True)
+
+# Footer
 st.markdown("""
 <hr>
 <div style='text-align:center;font-size:0.85rem;color:gray'>

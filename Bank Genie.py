@@ -190,10 +190,32 @@ st.session_state.detail_level = st.selectbox("📏 Choose Answer Format", ["Shor
 st.markdown("""
 <div class="responsive-buttons">
     <div class="btn">
-        <button onclick="window.location.reload();">💬 Ask Bank Genie</button>
+        <button style="
+            width: 100%;
+            background-color: black;
+            color: white;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+        ">💬 Ask Bank Genie</button>
     </div>
     <div class="btn">
-        <button onclick="window.location.reload();">🧹 Clear</button>
+        <button style="
+            width: 100%;
+            background-color: black;
+            color: white;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+        ">🧹 Clear</button>
     </div>
 </div>
 """, unsafe_allow_html=True)

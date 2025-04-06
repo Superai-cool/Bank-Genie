@@ -1,92 +1,96 @@
 import streamlit as st
 import openai
 import os
-from langdetect import detect
+import random
 
-# ------------------ App Configuration ------------------
-st.set_page_config(page_title="Bank Genie - Internal Assistant", layout="centered")
+# Set OpenAI API Key
+openai.api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 
-# ------------------ Load OpenAI API Key ------------------
-api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    st.error("❌ OpenAI API key not found. Please set it in your Streamlit Cloud Secrets or local environment.")
-    st.stop()
-openai.api_key = api_key
+# Streamlit App Config
+st.set_page_config(page_title="🏦 Bank Genie", layout="centered")
 
-# ------------------ Styling ------------------
+# ✅ Open Graph Meta Tags
+st.markdown("""
+    <head>
+        <meta property="og:title" content="Bank Genie - Internal Banking Q&A Assistant" />
+        <meta property="og:description" content="Ask internal banking questions in your preferred language and get context-rich answers tailored for Indian banking." />
+        <meta property="og:image" content="https://yourdomain.com/bankgenie-preview.png" />
+    </head>
+""", unsafe_allow_html=True)
+
+# ✅ Global Styles
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-    html, body, [class*="css"] {
-        font-family: 'Poppins', sans-serif;
-        background-color: #f8f9fa;
-    }
-    .block-container {
-        max-width: 650px;
-        background-color: white;
-        border-radius: 1.5rem;
-        padding: 2rem;
-        margin: auto;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    .stTextInput>div>div>input {
-        border-radius: 0.75rem;
-        padding: 1rem;
-        font-size: 1rem;
-    }
-    .stButton>button {
-        font-size: 16px;
-        border-radius: 10px;
-        padding: 10px 24px;
-        font-weight: bold;
-        width: 100%;
-        border: none;
-        margin-top: 10px;
-        background-color: #000000;
-        color: white;
-    }
-    .custom-answer {
-        font-size: 1rem;
-        margin-bottom: 1rem;
-    }
-    .example-line {
-        margin-top: 1rem;
-        font-style: italic;
-        color: #333333;
-        background-color: #f0f0f0;
-        padding: 10px;
-        border-radius: 8px;
-    }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+        html, body, [class*="css"] {
+            font-family: 'Poppins', sans-serif !important;
+        }
+        body {
+            background-color: #f8fafc;
+        }
+        .block-container {
+            max-width: 720px;
+            margin: auto;
+            padding-top: 2rem;
+        }
+        h1 {
+            text-align: center;
+            color: #1e293b;
+            font-size: 2.5rem;
+            margin-bottom: 0.2rem;
+        }
+        .subtitle {
+            text-align: center;
+            color: #475569;
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+        }
+        .response-box {
+            background-color: #ffffff;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            font-size: 1.05rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            margin-top: 1rem;
+        }
+        .btn-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1.25rem;
+        }
+        .btn-row button {
+            width: 100%;
+            flex: 1;
+            padding: 0.7rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: none;
+            color: white;
+        }
+        .generate-btn {
+            background-color: #0284c7;
+        }
+        .regen-btn {
+            background-color: #0ea5e9;
+        }
+        .clear-btn {
+            background-color: #dc2626;
+        }
     </style>
 """, unsafe_allow_html=True)
 
-# ------------------ Session Initialization ------------------
-if "user_query" not in st.session_state:
-    st.session_state.user_query = ""
-if "response" not in st.session_state:
-    st.session_state.response = None
-if "detail_level" not in st.session_state:
-    st.session_state.detail_level = "Short"
+# 🧠 Prompt Builder
+def build_prompt(query, detail_level, lang):
+    detail_addon = {
+        "Short": "- Give a short, summarized answer (1–3 lines)\n- Include 1 simple real-life example (use Indian context and INR)",
+        "Detailed": "- Give a clear, helpful answer (up to 5–6 lines)\n- Include 1 proper real-life example with Indian context and INR"
+    }[detail_level]
 
-# ------------------ Header ------------------
-st.title("🏦 Bank Genie - Internal Q&A Assistant")
-st.markdown("""
-👋 Welcome to **Bank Genie** — Empowering Bank Teams with Instant, Multilingual Support.
-
-💬 Ask any bank-related question below, and Bank Genie will provide accurate, helpful answers tailored to your preference — whether concise or in-depth.
-
-📞 For further assistance or support, feel free to call or WhatsApp us at +91-8830720742.
-""")
-
-# ------------------ Detail Level Selector ------------------
-st.session_state.detail_level = st.selectbox(
-    "Choose answer detail level:",
-    ["Short", "Detailed"],
-    index=0 if st.session_state.detail_level == "Short" else 1
-)
-
-# ------------------ Prompt Template ------------------
-BANK_GENIE_PROMPT = """
+    return f"""
 You are Bank Genie — an internal assistant for bank employees only. You answer only bank-related queries like:
 - Account opening/closure, KYC, dormant accounts
 - Deposits, withdrawals, cash handling rules
@@ -100,88 +104,93 @@ You are Bank Genie — an internal assistant for bank employees only. You answer
 "I’m designed to answer only internal bank-related questions. Please ask something related to banking."
 
 ✅ For valid banking questions:
-"""
+{detail_addon}
 
-if st.session_state.detail_level == "Short":
-    BANK_GENIE_PROMPT += """
-- Give a short, summarized answer (1–3 lines)
-- Include 1 simple real-life example (use Indian context and INR)
-"""
-else:
-    BANK_GENIE_PROMPT += """
-- Give a clear, helpful answer (up to 5–6 lines)
-- Include 1 proper real-life example with Indian context and INR
-"""
-
-BANK_GENIE_PROMPT += """
+🌐 Universal Instructions:
 - Keep answer and example on separate lines with space between
-- Avoid repeating the word "Example" if it’s already used
-- Answer in the same language the user asked
+- Avoid repeating the word 'Example' if already used
+- Answer in the same language the user asked (language: {lang})
+
+QUERY:
+\"\"\"{query}\"\"\"
 """
 
-# ------------------ Language Detection ------------------
-def detect_user_language(text):
+# 🚀 Generate Answer
+def generate_answer():
+    prompt = build_prompt(st.session_state.query, st.session_state.detail_level, st.session_state.language)
     try:
-        text = text.strip()
-        if len(text) < 10:
-            return "en"
-        lang_code = detect(text)
-        allowed_languages = {"en", "hi", "mr", "ta", "te", "gu", "kn", "bn", "ml", "pa", "or", "ur", "as", "ne", "si"}
-        return lang_code if lang_code in allowed_languages else "en"
-    except:
-        return "en"
-
-# ------------------ GPT Call ------------------
-def get_bank_response(query):
-    try:
-        query = query.strip()
-        if len(query.split()) <= 3 and not query.endswith("?"):
-            query = f"What is {query}?"
-        user_lang = detect_user_language(query)
-        lang_instruction = f"Answer the question in this language: {user_lang}. Use Indian context and INR for all examples. Keep the main answer and example clearly separated with a blank line."
         response = openai.ChatCompletion.create(
             model="gpt-4o",
-            messages=[
-                {"role": "system", "content": f"{BANK_GENIE_PROMPT}\n\n{lang_instruction}"},
-                {"role": "user", "content": query}
-            ],
-            temperature=0.3
+            messages=[{"role": "user", "content": prompt}],
+            temperature=random.uniform(0.4, 0.7),
+            max_tokens=400
         )
-        return response['choices'][0]['message']['content'].strip()
+        st.session_state.answer = response['choices'][0]['message']['content'].strip()
     except Exception as e:
-        st.error(f"❌ GPT Error: {e}")
-        return None
+        st.error(f"Error: {e}")
+        st.session_state.answer = ""
 
-# ------------------ Input Field ------------------
-user_input = st.text_input(
-    "Ask your question (in any language):",
-    value=st.session_state.user_query,
-    max_chars=300
-)
+# 🧼 Clear App
+def clear_app():
+    for key in ["query", "detail_level", "language", "answer"]:
+        if key in st.session_state:
+            del st.session_state[key]
+    st.rerun()
 
-# ------------------ Ask Button ------------------
-if st.button("Ask to Bank Genie") and user_input.strip():
-    st.session_state.user_query = user_input
-    with st.spinner("Thinking like a banker..."):
-        st.session_state.response = get_bank_response(user_input)
+# 🔄 Session Defaults
+st.session_state.setdefault("query", "")
+st.session_state.setdefault("detail_level", "Short")
+st.session_state.setdefault("language", "English")
+st.session_state.setdefault("answer", "")
 
-# ------------------ Output ------------------
-if st.session_state.response:
-    reply = st.session_state.response
-    if "\n\n" in reply:
-        answer, example = reply.split("\n\n", 1)
-        example_clean = example.strip().removeprefix("Example:").strip()
-        st.markdown(f"""
-        <div class='custom-answer'>{answer.strip()}</div>
-        <div class='example-line'>💡 Example: {example_clean}</div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown(f"### ✅ Answer\n{reply}")
-
-# ------------------ Footer ------------------
+# 💬 Title + Subtitle
+st.markdown("<h1>🏦 Bank Genie</h1>", unsafe_allow_html=True)
 st.markdown("""
----
-<div style="text-align:center">
-<small>🔐 For internal banking use only | Powered by SuperAI Labs</small>
+<div class='subtitle'>
+Your internal AI assistant for quick, context-aware responses to banking questions.<br>
+Available in English, Hindi, Marathi & more.
+</div>
+""", unsafe_allow_html=True)
+
+# 📝 Query Input
+st.session_state.query = st.text_area("🔍 Enter your bank-related question", value=st.session_state.query, height=130)
+
+# 🎯 Options
+col1, col2 = st.columns(2)
+with col1:
+    st.session_state.detail_level = st.radio("📏 Answer Detail", ["Short", "Detailed"], index=["Short", "Detailed"].index(st.session_state.detail_level))
+with col2:
+    st.session_state.language = st.selectbox("🌐 Preferred Language", ["English", "Hindi", "Marathi", "Kannada", "Tamil"], index=0)
+
+# 🚦 Action Buttons
+st.markdown('<div class="btn-row">', unsafe_allow_html=True)
+c1, c2, c3 = st.columns(3)
+with c1:
+    if st.button("💡 Generate Answer", key="gen"):
+        if st.session_state.query.strip():
+            generate_answer()
+        else:
+            st.warning("Please enter a valid banking question.")
+with c2:
+    if st.button("🔁 Regenerate", key="regen"):
+        if st.session_state.answer:
+            generate_answer()
+        else:
+            st.warning("Generate an answer first.")
+with c3:
+    if st.button("🧹 Clear", key="clear"):
+        clear_app()
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ✅ Show Answer
+if st.session_state.answer:
+    st.markdown("### ✅ Suggested Answer")
+    st.markdown(f"<div class='response-box'>{st.session_state.answer}</div>", unsafe_allow_html=True)
+
+# 🌟 Footer
+st.markdown("""
+<hr style='margin-top: 3rem; margin-bottom: 1rem;'>
+<div style='text-align: center; font-size: 0.9rem; color: #6b7280;'>
+🔐 Built with ❤️ by <strong>SuperAI Labs</strong> — Banking Knowledge, AI-Powered.
 </div>
 """, unsafe_allow_html=True)

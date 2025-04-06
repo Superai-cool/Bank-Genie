@@ -78,8 +78,8 @@ if "detail_level" not in st.session_state:
 # ------------------ UI Header ------------------
 st.title("🏦 Bank Genie - Internal Q&A Assistant")
 st.markdown("""
-Welcome to **Bank Genie**, your internal multilingual assistant.  
-Ask any bank-related question below.
+Welcome to **Bank Genie** — Empowering Bank Teams with Instant, Multilingual Support
+.
 
 🔹 Responses can be short or detailed based on your preference  
 🔒 Non-banking queries will be politely declined.

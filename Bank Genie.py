@@ -5,6 +5,7 @@ import PyPDF2
 import random
 import os
 from io import BytesIO
+from langdetect import detect
 
 # ✅ Page Config
 st.set_page_config(page_title="🏦 Bank Genie", layout="centered")
@@ -86,9 +87,28 @@ def load_pdf_from_github(pdf_url):
         text += page.extract_text()
     return text
 
-# ✅ GitHub PDF link
+# ✅ GitHub PDF URL
 pdf_url = "https://raw.githubusercontent.com/Superai-cool/Bank-Genie/b2724bae6283a1524d3abcfaf80071961441ec11/bank_knowledge_base.pdf"
 knowledge_base = load_pdf_from_github(pdf_url)
+
+# ✅ Translate if needed
+def maybe_translate_to_english(text):
+    try:
+        lang = detect(text)
+        if lang != "en":
+            translation_prompt = f"Translate this banking question to English:\n\n{text}"
+            result = openai.ChatCompletion.create(
+                model="gpt-4o",
+                messages=[{"role": "user", "content": translation_prompt}],
+                temperature=0.2,
+                max_tokens=100
+            )
+            translated = result['choices'][0]['message']['content'].strip()
+            return translated, lang
+        return text, "en"
+    except Exception as e:
+        st.warning("Could not detect or translate language.")
+        return text, "en"
 
 # ✅ Refine Query
 def refine_query(raw_input):
@@ -117,12 +137,13 @@ Rewritten Question:
         st.error(f"Error refining question: {e}")
         return raw_input
 
-# ✅ Build Prompt
+# ✅ Build GPT Prompt
 def build_prompt(refined_query):
     detail = st.session_state.get("detail_level", "Short")
+    lang_code = st.session_state.get("lang_code", "en")
     return f"""
-You are Bank Genie, an AI assistant for bank employees. 
-Only answer using the official knowledge base provided below. 
+You are Bank Genie, an AI assistant for bank employees.
+Only answer using the official knowledge base provided below.
 If the answer is not found, say:
 "I'm only allowed to answer based on our internal knowledge base, and I couldn’t find relevant info for this query."
 
@@ -130,6 +151,9 @@ If the answer is not found, say:
 \"\"\"{knowledge_base}\"\"\"
 
 📝 Response Style: {"Keep it short (1–3 lines) and include a simple Indian example with INR." if detail == "Short" else "Give a detailed explanation (up to 6 lines) and include a real-world Indian example with INR."}
+
+🗣️ Language Instruction:
+Respond in the same language the user used: {lang_code}. Use INR in all examples.
 
 ❓ Question:
 \"\"\"{refined_query}\"\"\"
@@ -143,8 +167,12 @@ def generate_answer():
     if not raw_input:
         st.warning("Please enter a bank-related question.")
         return
-    refined_query = refine_query(raw_input)
-    st.session_state.query = refined_query
+
+    translated_query, lang_code = maybe_translate_to_english(raw_input)
+    st.session_state.lang_code = lang_code
+
+    refined_query = refine_query(translated_query)
+    st.session_state.query = raw_input
 
     prompt = build_prompt(refined_query)
     try:
@@ -160,7 +188,7 @@ def generate_answer():
 
 # ✅ Clear
 def clear_all():
-    for key in ["query", "answer", "detail_level"]:
+    for key in ["query", "answer", "detail_level", "lang_code"]:
         st.session_state.pop(key, None)
     st.rerun()
 
@@ -168,6 +196,7 @@ def clear_all():
 st.session_state.setdefault("query", "")
 st.session_state.setdefault("answer", "")
 st.session_state.setdefault("detail_level", "Short")
+st.session_state.setdefault("lang_code", "en")
 
 # ✅ Layout
 st.markdown("<div class='container'>", unsafe_allow_html=True)
@@ -176,8 +205,6 @@ st.markdown("<div class='subtitle'>🔐 Internal Assistant for Indian Bank Emplo
 
 # ✅ Input
 st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=130)
-
-# ✅ Dropdown
 st.session_state.detail_level = st.selectbox("📏 Choose Answer Format", ["Short", "Detailed"], index=0)
 
 # ✅ Buttons
@@ -200,7 +227,6 @@ if st.session_state.answer:
     # Try splitting by known example indicators
     example_indicators = ["For example", "For instance", "E.g.", "Example:"]
     split_index = -1
-
     for indicator in example_indicators:
         idx = full_text.find(indicator)
         if idx != -1:

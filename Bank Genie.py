@@ -1,7 +1,9 @@
-import streamlit as st 
+import streamlit as st
 import openai
-import os
+import requests
+import PyPDF2
 import random
+from io import BytesIO
 
 # ✅ Page Config
 st.set_page_config(page_title="🏦 Bank Genie", layout="centered")
@@ -34,21 +36,6 @@ st.markdown("""
         color: #52525b;
         margin-bottom: 1.5rem;
         text-align: center;
-    }
-    textarea {
-        height: 100px !important;
-        padding: 12px !important;
-        border: 1.5px solid #d1d5db !important;
-        border-radius: 8px !important;
-        font-size: 1rem !important;
-        resize: none !important;
-        background-color: #ffffff !important;
-        color: #111827 !important;
-    }
-    textarea:focus {
-        border-color: #2563eb !important;
-        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
-        outline: none !important;
     }
     .button-row {
         display: flex;
@@ -84,7 +71,25 @@ st.markdown("""
 # ✅ OpenAI API Key
 openai.api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 
-# ✅ Refine Query
+# ✅ Load PDF from GitHub
+@st.cache_data
+def load_pdf_from_github(pdf_url):
+    response = requests.get(pdf_url)
+    if response.status_code != 200:
+        st.error("❌ Could not load the knowledge base PDF.")
+        return ""
+    pdf_content = BytesIO(response.content)
+    reader = PyPDF2.PdfReader(pdf_content)
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text()
+    return text
+
+# ✅ Actual GitHub Raw PDF URL
+pdf_url = "https://raw.githubusercontent.com/Superai-cool/Bank-Genie/b2724bae6283a1524d3abcfaf80071961441ec11/bank_knowledge_base.pdf"
+knowledge_base = load_pdf_from_github(pdf_url)
+
+# ✅ Refine user input to clean question
 def refine_query(raw_input):
     prompt = f"""
 You are a helper that converts vague or poorly written banking queries into clear questions.
@@ -111,89 +116,61 @@ Rewritten Question:
         st.error(f"Error refining question: {e}")
         return raw_input
 
-# ✅ Build GPT Prompt with improved example instruction
-def build_prompt(refined_query, detail_level):
+# ✅ Use only the PDF to answer
+def build_prompt(refined_query):
     return f"""
-You are Bank Genie, an internal AI assistant designed only for bank employees. Your sole purpose is to answer banking-related queries clearly and accurately, tailored to the needs of internal banking teams.
+You are Bank Genie, an AI assistant for bank employees. 
+Only answer using the official knowledge base provided below. 
+If the answer is not found, say:
+"I'm only allowed to answer based on our internal knowledge base, and I couldn’t find relevant info for this query."
 
-✅ You Can Answer Topics Like:
-Account opening/closure, KYC procedures, dormant accounts  
-Deposits, withdrawals, cash-handling rules  
-NEFT, RTGS, UPI, IMPS, cheque handling  
-Loans (types, documentation, eligibility, interest)  
-Internal software/tools (e.g., Finacle, CBS)  
-RBI guidelines, audits, bank policies  
-Staff-related queries only if tied to banking operations or policy
+📘 Knowledge Base:
+\"\"\"{knowledge_base}\"\"\"
 
-❌ You Should NOT Answer:
-If the query is unrelated to banking, politely decline with:  
-"I’m designed to answer only internal bank-related questions. Please ask something related to banking."
-
-📝 Answer Style Based on User Preference:
-{"If Short response is requested:" if detail_level == "Short" else "If Detailed response is requested:"}
-{"Provide a summarized answer (1–3 lines)\nInclude one real-life example below the answer" if detail_level == "Short" else "Provide a clear explanation (5–6 lines max)\nInclude one real-life example below the answer"}
-
-✅ Example Instruction:
-The example must:
-- Use Indian names and INR currency
-- Mention city, income, loan amount, interest rate, tenure
-- Be realistic and easy to understand in 2–3 lines
-- Start with “For example,” or “For instance,”
-
-🗣️ Language Rules:
-Always respond in the same language the user asked in  
-Use Indian terminology and INR currency  
-Keep the main answer and example clearly separated by a blank line  
-Avoid repeating the word “Example” as a heading
-
-🌐 Dynamic Language Instruction (added at runtime):
-“Answer the question in this language: [detected language]. Use Indian context and INR for all examples. Keep the main answer and example clearly separated with a blank line.”
-
-QUESTION:
+❓ Question:
 \"\"\"{refined_query}\"\"\"
+
+🧠 Answer:
 """
 
-# ✅ Generate Answer
+# ✅ Generate the answer using OpenAI
 def generate_answer():
     raw_input = st.session_state.query.strip()
     if not raw_input:
         st.warning("Please enter a bank-related question.")
         return
-
     refined_query = refine_query(raw_input)
     st.session_state.query = refined_query
 
-    prompt = build_prompt(refined_query, st.session_state.detail_level)
+    prompt = build_prompt(refined_query)
     try:
         response = openai.ChatCompletion.create(
             model="gpt-4o",
             messages=[{"role": "user", "content": prompt}],
-            temperature=random.uniform(0.4, 0.7),
-            max_tokens=400
+            temperature=0.3,
+            max_tokens=500
         )
         st.session_state.answer = response['choices'][0]['message']['content'].strip()
     except Exception as e:
         st.error(f"Error generating answer: {e}")
 
-# ✅ Clear
+# ✅ Clear all session state
 def clear_all():
-    for key in ["query", "detail_level", "answer"]:
+    for key in ["query", "answer"]:
         st.session_state.pop(key, None)
     st.rerun()
 
-# ✅ Session State
+# ✅ Initialize Session State
 st.session_state.setdefault("query", "")
-st.session_state.setdefault("detail_level", "Short")
 st.session_state.setdefault("answer", "")
 
-# ✅ Layout
+# ✅ Layout & UI
 st.markdown("<div class='container'>", unsafe_allow_html=True)
 st.markdown("<div class='title'>🏦 Bank Genie</div>", unsafe_allow_html=True)
 st.markdown("<div class='subtitle'>🔐 Internal Assistant for Indian Bank Employees | ⚡ Accurate • ⚙️ Instant • 💼 Professional</div>", unsafe_allow_html=True)
 
-# ✅ Input
+# ✅ User Input
 st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=130)
-st.session_state.detail_level = st.selectbox("📏 Choose Answer Format", ["Short", "Detailed"], index=0)
 
 # ✅ Buttons
 st.markdown("<div class='button-row'>", unsafe_allow_html=True)
@@ -209,21 +186,10 @@ st.markdown("</div>", unsafe_allow_html=True)
 # ✅ Output
 if st.session_state.answer:
     st.markdown("### ✅ Answer")
-
-    parts = st.session_state.answer.strip().split("\n\n", 1)
-    main_answer = parts[0]
-    example_part = parts[1] if len(parts) > 1 else ""
-
     st.markdown(f"""
     <div style='background-color:#f9fafb; border:1px solid #e5e7eb; padding: 1.25rem; border-radius: 10px;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.06); font-size: 1rem; margin-bottom: 1.2rem;'>{main_answer}</div>
+                box-shadow: 0 2px 6px rgba(0,0,0,0.06); font-size: 1rem; margin-bottom: 1.2rem;'>{st.session_state.answer}</div>
     """, unsafe_allow_html=True)
-
-    if example_part:
-        st.markdown(f"""
-        <div style='background-color:#eef2ff; border:1px solid #c7d2fe; padding: 1.25rem; border-radius: 10px;
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.05); font-size: 1rem;'>{example_part}</div>
-        """, unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
 

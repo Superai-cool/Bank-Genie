@@ -73,9 +73,12 @@ if "response" not in st.session_state:
     st.session_state.response = None
 if "detail_level" not in st.session_state:
     st.session_state.detail_level = "Short"
+if "question_box" not in st.session_state:
+    st.session_state.question_box = ""
 
 # ------------------ Clear App Function ------------------
 def clear_app():
+    st.session_state.question_box = ""
     st.session_state.user_query = ""
     st.session_state.response = None
     st.session_state.detail_level = "Short"
@@ -165,12 +168,12 @@ def get_bank_response(query):
         st.error(f"❌ GPT Error: {e}")
         return None
 
-# ------------------ Input Field (with KEY) ------------------
-st.text_input(
+# ------------------ Input Field (safe key) ------------------
+user_query = st.text_input(
     "Ask your question (in any language):",
-    value=st.session_state.user_query,
-    key="user_query",
-    max_chars=300
+    value=st.session_state.question_box,
+    max_chars=300,
+    key="question_box"
 )
 
 # ------------------ Buttons ------------------
@@ -185,9 +188,10 @@ if clear_btn:
     clear_app()
 
 # ------------------ Ask Action ------------------
-if ask_btn and st.session_state.user_query.strip():
+if ask_btn and user_query.strip():
+    st.session_state.user_query = user_query
     with st.spinner("Thinking like a banker..."):
-        st.session_state.response = get_bank_response(st.session_state.user_query)
+        st.session_state.response = get_bank_response(user_query)
 
 # ------------------ Output ------------------
 if st.session_state.response:

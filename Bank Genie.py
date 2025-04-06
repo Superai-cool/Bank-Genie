@@ -67,17 +67,15 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ------------------ Session State Initialization ------------------
+# ------------------ Session State ------------------
 if "user_query" not in st.session_state:
     st.session_state.user_query = ""
 if "response" not in st.session_state:
     st.session_state.response = None
 if "detail_level" not in st.session_state:
     st.session_state.detail_level = "Short"
-if "question_input" not in st.session_state:
-    st.session_state.question_input = ""
 
-# ------------------ UI Header ------------------
+# ------------------ Header ------------------
 st.title("🏦 Bank Genie - Internal Q&A Assistant")
 st.markdown("""
 👋 Welcome to **Bank Genie** — Empowering Bank Teams with Instant, Multilingual Support.
@@ -87,7 +85,7 @@ st.markdown("""
 📞 For further assistance or support, feel free to call or WhatsApp us at +91-8830720742.
 """)
 
-# ------------------ Dropdown for Detail Level ------------------
+# ------------------ Detail Level Dropdown ------------------
 detail_level = st.selectbox(
     "Choose answer detail level:",
     ["Short", "Detailed"],
@@ -129,7 +127,7 @@ BANK_GENIE_PROMPT += """
 - Answer in the same language the user asked
 """
 
-# ------------------ Language Detection ------------------
+# ------------------ Detect Language ------------------
 def detect_user_language(text):
     try:
         text = text.strip()
@@ -141,7 +139,7 @@ def detect_user_language(text):
     except:
         return "en"
 
-# ------------------ GPT Answer Function ------------------
+# ------------------ GPT Call ------------------
 def get_bank_response(query):
     try:
         query = query.strip()
@@ -166,12 +164,12 @@ def get_bank_response(query):
         st.error(f"❌ GPT Error: {e}")
         return None
 
-# ------------------ Input Field ------------------
-user_query_input = st.text_input(
+# ------------------ Input Placeholder ------------------
+input_placeholder = st.empty()
+user_query_input = input_placeholder.text_input(
     "Ask your question (in any language):",
-    value=st.session_state.question_input,
-    max_chars=300,
-    key="question_input"
+    value=st.session_state.user_query,
+    max_chars=300
 )
 
 # ------------------ Buttons ------------------
@@ -181,12 +179,11 @@ with col1:
 with col2:
     clear_btn = st.button("Clear")
 
-# ------------------ Clear Button Logic ------------------
+# ------------------ Clear Logic (No direct key modification) ------------------
 if clear_btn:
     st.session_state.user_query = ""
     st.session_state.response = None
     st.session_state.detail_level = "Short"
-    st.session_state.question_input = ""
     st.rerun()
 
 # ------------------ Ask Button Logic ------------------

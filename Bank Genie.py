@@ -6,7 +6,7 @@ import random
 # ✅ Set Page Config
 st.set_page_config(page_title="🏦 Bank Genie", layout="centered")
 
-# ✅ Global Styles – Black Buttons with White Text + Flat Layout
+# ✅ Global Styles – Black Floating Buttons + Layout Fix
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
@@ -68,6 +68,19 @@ st.markdown("""
         background-color: #000000 !important;
         color: white !important;
         border: none !important;
+        transition: all 0.15s ease-in-out;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .stButton > button:hover {
+        background-color: #111111 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .stButton > button:active {
+        transform: scale(0.98);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
     }
 
     @media (max-width: 600px) {
@@ -149,7 +162,7 @@ st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=
 
 st.session_state.detail_level = st.radio("📏 Choose Answer Format", ["Short", "Detailed"], horizontal=True)
 
-# ✅ Buttons: Ask + Clear
+# ✅ Buttons: Ask & Clear
 st.markdown("<div class='button-row'>", unsafe_allow_html=True)
 col1, col2 = st.columns(2)
 with col1:

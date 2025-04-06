@@ -1,209 +1,203 @@
 import streamlit as st
 import openai
 import os
-import random
+from langdetect import detect
 
-# ------------------ OpenAI Key ------------------
-openai.api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
+# ------------------ App Configuration ------------------
+st.set_page_config(page_title="Bank Genie - Internal Assistant", layout="centered")
 
-# ------------------ App Config ------------------
-st.set_page_config(page_title="💬 EasyReply", layout="centered")
+# ------------------ Load OpenAI API Key ------------------
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    st.error("❌ OpenAI API key not found. Please set it in your Streamlit Cloud Secrets or local environment.")
+    st.stop()
+openai.api_key = api_key
 
-# ------------------ Open Graph Preview ------------------
-st.markdown("""
-    <head>
-        <meta property="og:title" content="EasyReply - Your AI Assistant for Google Reviews" />
-        <meta property="og:description" content="Generate quick, professional responses to Google Reviews effortlessly with EasyReply." />
-        <meta property="og:image" content="https://raw.githubusercontent.com/Superai-cool/Supercomment/17ed2f28487e60c4f2155a3d81e9ad5e89c107d5/Easyreply.png" />
-    </head>
-""", unsafe_allow_html=True)
-
-# ------------------ Global Styling ------------------
+# ------------------ Styling ------------------
 st.markdown("""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
-
-        html, body, [class*="css"] {
-            font-family: 'Poppins', sans-serif !important;
-        }
-        body {
-            background-color: #f9fafb;
-        }
-        .block-container {
-            max-width: 700px;
-            margin: auto;
-            padding-top: 2rem;
-        }
-        h1 {
-            text-align: center;
-            color: #111827;
-            font-size: 2.5rem;
-            margin-bottom: 0.2rem;
-        }
-        .subtitle {
-            text-align: center;
-            color: #4b5563;
-            font-size: 1.1rem;
-            line-height: 1.6;
-            margin-bottom: 1.5rem;
-        }
-        label, .stTextArea label, .stSelectbox label {
-            font-size: 1rem !important;
-            font-weight: 500;
-        }
-        .stTextArea textarea,
-        .stSelectbox div,
-        .stButton button,
-        .stMarkdown,
-        .stAlert,
-        .stTextInput input {
-            font-family: 'Poppins', sans-serif !important;
-            font-size: 1rem !important;
-        }
-        .response-box {
-            background-color: #ffffff;
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            font-size: 1.05rem;
-            line-height: 1.6;
-            white-space: pre-wrap;
-            margin-top: 1rem;
-        }
-        .btn-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 1rem;
-            flex-wrap: wrap;
-            margin-top: 1.25rem;
-        }
-        .btn-row button {
-            width: 100%;
-            flex: 1;
-            padding: 0.7rem;
-            font-size: 1rem;
-            border-radius: 8px;
-            border: none;
-            color: white;
-        }
-        .generate-btn {
-            background-color: #1d4ed8;
-        }
-        .regen-btn {
-            background-color: #0ea5e9;
-        }
-        .clear-btn {
-            background-color: #ef4444;
-        }
-        @media (max-width: 500px) {
-            .btn-row {
-                flex-direction: column;
-            }
-            .btn-row button {
-                margin-bottom: 0.5rem;
-            }
-        }
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+    html, body, [class*="css"] {
+        font-family: 'Poppins', sans-serif;
+        background-color: #f8f9fa;
+    }
+    .block-container {
+        max-width: 650px;
+        background-color: white;
+        border-radius: 1.5rem;
+        padding: 2rem;
+        margin: auto;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .stTextInput>div>div>input {
+        border-radius: 0.75rem;
+        padding: 1rem;
+        font-size: 1rem;
+    }
+    .stButton>button {
+        font-size: 16px;
+        border-radius: 10px;
+        padding: 10px 24px;
+        font-weight: bold;
+        width: 100%;
+        border: none;
+        margin-top: 10px;
+    }
+    .stButton > button:first-child {
+        background-color: #000000;
+        color: white;
+    }
+    .stButton > button:last-child {
+        background-color: #dc3545 !important;
+        color: white;
+    }
+    .custom-answer {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+    .example-line {
+        margin-top: 1rem;
+        font-style: italic;
+        color: #333333;
+        background-color: #f0f0f0;
+        padding: 10px;
+        border-radius: 8px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# ------------------ Prompt Builder ------------------
-def build_prompt(review, tone):
-    return f"""
-You are a specialized GPT assistant designed solely for generating short, professional replies to Google Reviews.
+# ------------------ Session Initialization ------------------
+if "user_query" not in st.session_state:
+    st.session_state.user_query = ""
+if "response" not in st.session_state:
+    st.session_state.response = None
+if "detail_level" not in st.session_state:
+    st.session_state.detail_level = "Short"
 
-ONLY respond with a reply (no explanations). Use the tone: {tone}.
-
-REVIEW:
-\"\"\"{review}\"\"\"
-
-Rules:
-- Only generate a short reply (20–50 words).
-- No emojis.
-- Don't use generic intros like "Dear Customer" unless it fits.
-- Reflect tone and content of review.
-- Stay authentic and specific.
-- If review is not relevant, reply:
-  "This GPT is designed only to generate short replies to Google Reviews. Please paste a review and select a tone to receive a reply."
-"""
-
-# ------------------ Generate Reply ------------------
-def generate_reply():
-    prompt = build_prompt(st.session_state.review, st.session_state.tone)
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4o",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=random.uniform(0.6, 0.8),
-            max_tokens=150
-        )
-        st.session_state.reply = response['choices'][0]['message']['content'].strip()
-    except Exception as e:
-        st.error(f"Error: {e}")
-        st.session_state.reply = ""
-
-# ------------------ Clear App Like Fresh ------------------
-def clear_app():
-    st.session_state.review = ""
-    st.session_state.tone = "Professional"
-    st.session_state.reply = ""
-    st.rerun()
-
-# ------------------ Session State Defaults ------------------
-if "review" not in st.session_state:
-    st.session_state.review = ""
-if "tone" not in st.session_state:
-    st.session_state.tone = "Professional"
-if "reply" not in st.session_state:
-    st.session_state.reply = ""
-
-# ------------------ Title + Intro ------------------
-st.markdown("<h1>💬 EasyReply</h1>", unsafe_allow_html=True)
+# ------------------ Header ------------------
+st.title("🏦 Bank Genie - Internal Q&A Assistant")
 st.markdown("""
-<div class='subtitle'>
-EasyReply uses AI to craft thoughtful, personalized responses to Google reviews.<br>
-Turn every review into a relationship — easily and professionally.
-</div>
-""", unsafe_allow_html=True)
+👋 Welcome to **Bank Genie** — Empowering Bank Teams with Instant, Multilingual Support.
 
-# ------------------ Review Input ------------------
-st.session_state.review = st.text_area("📝 Paste Google Review", value=st.session_state.review, height=140)
+💬 Ask any bank-related question below, and Bank Genie will provide accurate, helpful answers tailored to your preference — whether concise or in-depth.
 
-# ------------------ Tone Selector ------------------
-st.session_state.tone = st.selectbox(
-    "🎯 Choose Reply Tone",
-    ["Professional", "Friendly", "Empathetic", "Apologetic", "Appreciative"],
-    index=["Professional", "Friendly", "Empathetic", "Apologetic", "Appreciative"].index(st.session_state.tone)
+📞 For further assistance or support, feel free to call or WhatsApp us at +91-8830720742.
+""")
+
+# ------------------ Detail Level Selector ------------------
+st.session_state.detail_level = st.selectbox(
+    "Choose answer detail level:",
+    ["Short", "Detailed"],
+    index=0 if st.session_state.detail_level == "Short" else 1
 )
 
+# ------------------ Prompt Template ------------------
+BANK_GENIE_PROMPT = """
+You are Bank Genie — an internal assistant for bank employees only. You answer only bank-related queries like:
+- Account opening/closure, KYC, dormant accounts
+- Deposits, withdrawals, cash handling rules
+- NEFT, RTGS, UPI, IMPS, cheque handling
+- Loans, documentation, eligibility
+- Internal tools like Finacle or CBS
+- Internal policies, RBI guidelines, audits
+- Staff-related questions only if tied to internal policies
+
+❌ Do NOT answer anything unrelated to banking. Respond with:
+"I’m designed to answer only internal bank-related questions. Please ask something related to banking."
+
+✅ For valid banking questions:
+"""
+
+if st.session_state.detail_level == "Short":
+    BANK_GENIE_PROMPT += """
+- Give a short, summarized answer (1–3 lines)
+- Include 1 simple real-life example (use Indian context and INR)
+"""
+else:
+    BANK_GENIE_PROMPT += """
+- Give a clear, helpful answer (up to 5–6 lines)
+- Include 1 proper real-life example with Indian context and INR
+"""
+
+BANK_GENIE_PROMPT += """
+- Keep answer and example on separate lines with space between
+- Avoid repeating the word "Example" if it’s already used
+- Answer in the same language the user asked
+"""
+
+# ------------------ Language Detection ------------------
+def detect_user_language(text):
+    try:
+        text = text.strip()
+        if len(text) < 10:
+            return "en"
+        lang_code = detect(text)
+        allowed_languages = {"en", "hi", "mr", "ta", "te", "gu", "kn", "bn", "ml", "pa", "or", "ur", "as", "ne", "si"}
+        return lang_code if lang_code in allowed_languages else "en"
+    except:
+        return "en"
+
+# ------------------ GPT Query ------------------
+def get_bank_response(query):
+    try:
+        query = query.strip()
+        if len(query.split()) <= 3 and not query.endswith("?"):
+            query = f"What is {query}?"
+        user_lang = detect_user_language(query)
+        lang_instruction = f"Answer the question in this language: {user_lang}. Use Indian context and INR for all examples. Keep the main answer and example clearly separated with a blank line."
+        response = openai.ChatCompletion.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": f"{BANK_GENIE_PROMPT}\n\n{lang_instruction}"},
+                {"role": "user", "content": query}
+            ],
+            temperature=0.3
+        )
+        return response['choices'][0]['message']['content'].strip()
+    except Exception as e:
+        st.error(f"❌ GPT Error: {e}")
+        return None
+
+# ------------------ Input Field ------------------
+user_input = st.text_input("Ask your question (in any language):", value=st.session_state.user_query, max_chars=300)
+
 # ------------------ Buttons ------------------
-st.markdown('<div class="btn-row">', unsafe_allow_html=True)
-col1, col2, col3 = st.columns(3)
+col1, col2 = st.columns([3, 1])
 with col1:
-    if st.button("✨ Generate Reply", type="primary"):
-        if st.session_state.review.strip():
-            generate_reply()
-        else:
-            st.warning("Please paste a review.")
+    ask_btn = st.button("Ask to Bank Genie")
 with col2:
-    if st.button("🔄 Regenerate"):
-        if st.session_state.reply:
-            generate_reply()
-        else:
-            st.warning("Generate a reply first.")
-with col3:
-    if st.button("🧹 Clear"):
-        clear_app()
-st.markdown('</div>', unsafe_allow_html=True)
+    clear_btn = st.button("Clear")
+
+# ------------------ Clear Logic ------------------
+if clear_btn:
+    st.session_state.user_query = ""
+    st.session_state.response = None
+    st.session_state.detail_level = "Short"
+    st.rerun()
+
+# ------------------ Ask Logic ------------------
+if ask_btn and user_input.strip():
+    st.session_state.user_query = user_input
+    with st.spinner("Thinking like a banker..."):
+        st.session_state.response = get_bank_response(user_input)
 
 # ------------------ Output ------------------
-if st.session_state.reply:
-    st.markdown("### ✅ Suggested Reply")
-    st.markdown(f"<div class='response-box'>{st.session_state.reply}</div>", unsafe_allow_html=True)
+if st.session_state.response:
+    reply = st.session_state.response
+    if "\n\n" in reply:
+        answer, example = reply.split("\n\n", 1)
+        example_clean = example.strip().removeprefix("Example:").strip()
+        st.markdown(f"""
+        <div class='custom-answer'>{answer.strip()}</div>
+        <div class='example-line'>💡 Example: {example_clean}</div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"### ✅ Answer\n{reply}")
 
 # ------------------ Footer ------------------
 st.markdown("""
-<hr style='margin-top: 3rem; margin-bottom: 1rem;'>
-<div style='text-align: center; font-size: 0.9rem; color: #6b7280; font-family: "Poppins", sans-serif;'>
-✨ Made with ❤️ Developed by <strong>SuperAI Labs</strong> 🤖
+---
+<div style="text-align:center">
+<small>🔐 For internal banking use only | Powered by SuperAI Labs</small>
 </div>
 """, unsafe_allow_html=True)

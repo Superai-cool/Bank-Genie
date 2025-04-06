@@ -6,7 +6,7 @@ import random
 # ✅ Set Page Config
 st.set_page_config(page_title="🏦 Bank Genie", layout="centered")
 
-# ✅ Global Styles – Black Floating Buttons + Dropdown + Mobile-Friendly
+# ✅ Global Styles – Redesigned Input + Floating Buttons
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
@@ -41,6 +41,25 @@ st.markdown("""
         font-size: 1rem;
         color: #52525b;
         margin-bottom: 1.5rem;
+    }
+
+    /* ✅ Text Area Styling */
+    textarea {
+        height: 100px !important;
+        padding: 12px !important;
+        border: 1.5px solid #d1d5db !important;
+        border-radius: 8px !important;
+        font-size: 1rem !important;
+        line-height: 1.5 !important;
+        resize: none !important;
+        background-color: #ffffff !important;
+        color: #111827 !important;
+    }
+
+    textarea:focus {
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
+        outline: none !important;
     }
 
     .response-box {

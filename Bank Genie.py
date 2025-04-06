@@ -83,7 +83,7 @@ st.markdown("""
 # ✅ OpenAI API Key
 openai.api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 
-# ✅ Grammar & Keyword Fix
+# ✅ Query Refinement
 def refine_query(raw_input):
     prompt = f"""
 You are a helper that converts vague or poorly written banking queries into clear questions.
@@ -110,7 +110,7 @@ Rewritten Question:
         st.error(f"Error refining question: {e}")
         return raw_input
 
-# ✅ Full Instruction Prompt
+# ✅ GPT Prompt Builder
 def build_prompt(refined_query, detail_level):
     return f"""
 You are Bank Genie, an internal AI assistant designed only for bank employees. Your sole purpose is to answer banking-related queries clearly and accurately, tailored to the needs of internal banking teams.
@@ -167,32 +167,31 @@ def generate_answer():
     except Exception as e:
         st.error(f"Error generating answer: {e}")
 
-# ✅ Clear App State
+# ✅ Clear All
 def clear_all():
     for key in ["query", "detail_level", "answer"]:
         st.session_state.pop(key, None)
     st.rerun()
 
-# ✅ Defaults
+# ✅ Session Defaults
 st.session_state.setdefault("query", "")
 st.session_state.setdefault("detail_level", "Short")
 st.session_state.setdefault("answer", "")
 
-# ✅ App UI
+# ✅ App Layout
 st.markdown("<div class='container'>", unsafe_allow_html=True)
 st.markdown("<div class='title'>🏦 Bank Genie</div>", unsafe_allow_html=True)
 
-# ✅ 👋 New Spacious Intro
+# ✅ Updated Subtitle (final)
 st.markdown("""
 <div class='subtitle' style='line-height: 1.8; text-align: center;'>
     👋 <strong>Welcome to Bank Genie — Empowering Bank Teams with Instant, Multilingual Support</strong><br><br>
-    💬 Ask any bank-related question below, and Bank Genie will provide accurate, helpful answers tailored to your preference — whether concise or detailed.<br><br>
     📞 For further assistance or support, feel free to call or 
     <a href="https://wa.me/918830720742" target="_blank" style="text-decoration: none; color: #1d4ed8;"><strong>WhatsApp us at +91-8830720742</strong></a>.
 </div>
 """, unsafe_allow_html=True)
 
-# ✅ Input
+# ✅ Inputs
 st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=130)
 st.session_state.detail_level = st.selectbox("📏 Choose Answer Format", ["Short", "Detailed"], index=0)
 
@@ -207,7 +206,7 @@ with col2:
         clear_all()
 st.markdown("</div>", unsafe_allow_html=True)
 
-# ✅ Output: Answer & Example
+# ✅ Output
 if st.session_state.answer:
     st.markdown("### 🧾 Answer")
 

@@ -41,7 +41,7 @@ QUERY:
 \"\"\"{query}\"\"\"
 """
 
-# 🤖 Generate Answer
+# Generate Answer
 def generate_answer():
     prompt = build_prompt(st.session_state.query, st.session_state.detail_level)
     try:
@@ -56,135 +56,126 @@ def generate_answer():
         st.error(f"Error: {e}")
         st.session_state.answer = ""
 
-# 🧹 Clear
+# Clear All
 def clear_all():
     for key in ["query", "detail_level", "answer"]:
         st.session_state.pop(key, None)
     st.rerun()
 
-# 🎯 Session Defaults
+# Defaults
 st.session_state.setdefault("query", "")
 st.session_state.setdefault("detail_level", "Short")
 st.session_state.setdefault("answer", "")
 
-# ✨ Modern App CSS
+# 🔧 Basic Styling (Flat Design)
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
-    html, body, [class*="css"] {
-        font-family: 'Poppins', sans-serif;
-        background-color: #f1f5f9;
-    }
-
-    .card {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        max-width: 640px;
-        margin: 2rem auto;
-        box-shadow: 0 12px 32px rgba(0,0,0,0.05);
-    }
-
-    .title {
-        text-align: center;
-        font-size: 2rem;
-        font-weight: 600;
-        color: #1e40af;
-        margin-bottom: 0.5rem;
-    }
-
-    .subtitle {
-        text-align: center;
-        color: #475569;
-        font-size: 1rem;
-        margin-bottom: 1.8rem;
-    }
-
-    .response-box {
-        background-color: #f9fafb;
-        padding: 1.25rem;
-        border-radius: 12px;
-        font-size: 1rem;
-        line-height: 1.6;
-        margin-top: 1.5rem;
-        border: 1px solid #e2e8f0;
-        white-space: pre-wrap;
-    }
-
-    .button-container {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-        margin-top: 2rem;
-    }
-
-    .stButton>button {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        font-size: 1rem;
-        font-weight: 600;
-        border-radius: 10px;
-        border: none;
-    }
-
-    .stButton>button:first-child {
-        background-color: #2563eb;
-        color: white;
-    }
-
-    .stButton>button:last-child {
-        background-color: #f43f5e;
-        color: white;
-    }
-
-    @media (min-width: 600px) {
-        .button-container {
-            flex-direction: row;
+        html, body, [class*="css"] {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f4f5;
         }
-        .stButton>button {
-            width: auto;
+
+        .container {
+            background-color: white;
+            padding: 2rem;
+            max-width: 700px;
+            margin: 2rem auto;
+            border-radius: 10px;
         }
-    }
+
+        .title {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 600;
+            color: #1e3a8a;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 1rem;
+            color: #52525b;
+            margin-bottom: 2rem;
+        }
+
+        .response-box {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .stButton > button {
+            font-size: 1rem;
+            padding: 0.65rem 1.2rem;
+            border-radius: 6px;
+            font-weight: 600;
+            border: none;
+        }
+
+        .stButton > button:first-child {
+            background-color: #2563eb;
+            color: white;
+        }
+
+        .stButton > button:last-child {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        @media (max-width: 600px) {
+            .button-row {
+                flex-direction: column;
+            }
+        }
     </style>
 """, unsafe_allow_html=True)
 
-# ✅ App UI
-with st.container():
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    
-    st.markdown("<div class='title'>🏦 Bank Genie</div>", unsafe_allow_html=True)
-    st.markdown("<div class='subtitle'>Smart Q&A assistant for Indian banking staff. Multilingual. Instant. Accurate.</div>", unsafe_allow_html=True)
+# 🚀 UI
+st.markdown("<div class='container'>", unsafe_allow_html=True)
 
-    st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=130)
+st.markdown("<div class='title'>🏦 Bank Genie</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Internal assistant for Indian bank employees. Accurate. Instant. Professional.</div>", unsafe_allow_html=True)
 
-    st.session_state.detail_level = st.radio("📏 Choose Answer Format", ["Short", "Detailed"], horizontal=True)
+st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=130)
 
-    # 🚦 Action Buttons
-    st.markdown("<div class='button-container'>", unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("💡 Generate Answer"):
-            if st.session_state.query.strip():
-                generate_answer()
-            else:
-                st.warning("Please enter a bank-related question.")
-    with col2:
-        if st.button("🧹 Clear"):
-            clear_all()
-    st.markdown("</div>", unsafe_allow_html=True)
+st.session_state.detail_level = st.radio("📏 Choose Answer Format", ["Short", "Detailed"], horizontal=True)
 
-    # ✅ Display Answer
-    if st.session_state.answer:
-        st.markdown("### ✅ Suggested Answer")
-        st.markdown(f"<div class='response-box'>{st.session_state.answer}</div>", unsafe_allow_html=True)
+st.markdown("<div class='button-row'>", unsafe_allow_html=True)
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("💡 Generate Answer"):
+        if st.session_state.query.strip():
+            generate_answer()
+        else:
+            st.warning("Please enter a valid question.")
+with col2:
+    if st.button("🧹 Clear"):
+        clear_all()
+st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)
+if st.session_state.answer:
+    st.markdown("### ✅ Suggested Answer")
+    st.markdown(f"<div class='response-box'>{st.session_state.answer}</div>", unsafe_allow_html=True)
+
+st.markdown("</div>", unsafe_allow_html=True)
 
 # 🌟 Footer
 st.markdown("""
-    <hr style="margin-top: 3rem;">
-    <div style='text-align: center; font-size: 0.9rem; color: #6b7280;'>
-        🔐 Built with ❤️ by <strong>SuperAI Labs</strong> — Tailored for Indian Banks 🇮🇳
+    <hr style='margin-top: 3rem;'>
+    <div style='text-align: center; font-size: 0.85rem; color: #6b7280;'>
+        🔐 Built by <strong>SuperAI Labs</strong> • Tailored for Indian Banking Teams 🇮🇳
     </div>
 """, unsafe_allow_html=True)

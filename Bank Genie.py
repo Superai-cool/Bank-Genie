@@ -74,9 +74,6 @@ st.markdown("""
         .generate-btn {
             background-color: #0284c7;
         }
-        .regen-btn {
-            background-color: #0ea5e9;
-        }
         .clear-btn {
             background-color: #dc2626;
         }
@@ -164,7 +161,7 @@ with col2:
 
 # 🚦 Action Buttons
 st.markdown('<div class="btn-row">', unsafe_allow_html=True)
-c1, c2, c3 = st.columns(3)
+c1, c2 = st.columns(2)
 with c1:
     if st.button("💡 Generate Answer", key="gen"):
         if st.session_state.query.strip():
@@ -172,12 +169,6 @@ with c1:
         else:
             st.warning("Please enter a valid banking question.")
 with c2:
-    if st.button("🔁 Regenerate", key="regen"):
-        if st.session_state.answer:
-            generate_answer()
-        else:
-            st.warning("Generate an answer first.")
-with c3:
     if st.button("🧹 Clear", key="clear"):
         clear_app()
 st.markdown('</div>', unsafe_allow_html=True)

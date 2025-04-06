@@ -74,6 +74,8 @@ if "response" not in st.session_state:
     st.session_state.response = None
 if "detail_level" not in st.session_state:
     st.session_state.detail_level = "Short"
+if "question_input" not in st.session_state:
+    st.session_state.question_input = ""
 
 # ------------------ UI Header ------------------
 st.title("🏦 Bank Genie - Internal Q&A Assistant")
@@ -167,8 +169,9 @@ def get_bank_response(query):
 # ------------------ Input Field ------------------
 user_query_input = st.text_input(
     "Ask your question (in any language):",
-    value=st.session_state.user_query,
-    max_chars=300
+    value=st.session_state.question_input,
+    max_chars=300,
+    key="question_input"
 )
 
 # ------------------ Buttons ------------------
@@ -183,6 +186,7 @@ if clear_btn:
     st.session_state.user_query = ""
     st.session_state.response = None
     st.session_state.detail_level = "Short"
+    st.session_state.question_input = ""
     st.rerun()
 
 # ------------------ Ask Button Logic ------------------

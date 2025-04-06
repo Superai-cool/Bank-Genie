@@ -160,7 +160,7 @@ st.session_state.detail_level = st.radio("📏 Choose Answer Format", ["Short", 
 st.markdown("<div class='button-row'>", unsafe_allow_html=True)
 col1, col2 = st.columns(2)
 with col1:
-    if st.button("💡 Generate Answer"):
+    if st.button("💬 Ask Bank Genie"):
         if st.session_state.query.strip():
             generate_answer()
         else:

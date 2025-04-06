@@ -35,6 +35,8 @@ st.markdown("""
         font-size: 1rem;
     }
     .stButton>button {
+        background-color: #000000;
+        color: white;
         font-size: 16px;
         border-radius: 10px;
         padding: 10px 24px;
@@ -42,14 +44,6 @@ st.markdown("""
         width: 100%;
         border: none;
         margin-top: 10px;
-    }
-    .stButton > button:first-child {
-        background-color: #000000;
-        color: white;
-    }
-    .stButton > button:last-child {
-        background-color: #dc3545 !important;
-        color: white;
     }
     .custom-answer {
         font-size: 1rem;
@@ -161,25 +155,12 @@ def get_bank_response(query):
 # ------------------ Input Field ------------------
 user_input = st.text_input("Ask your question (in any language):", value=st.session_state.user_query, max_chars=300)
 
-# ------------------ Buttons ------------------
-col1, col2 = st.columns([3, 1])
-with col1:
-    ask_btn = st.button("Ask to Bank Genie")
-with col2:
-    clear_btn = st.button("Clear")
-
-# ------------------ Clear Logic ------------------
-if clear_btn:
-    st.session_state.user_query = ""
-    st.session_state.response = None
-    st.session_state.detail_level = "Short"
-    st.rerun()
-
-# ------------------ Ask Logic ------------------
-if ask_btn and user_input.strip():
-    st.session_state.user_query = user_input
-    with st.spinner("Thinking like a banker..."):
-        st.session_state.response = get_bank_response(user_input)
+# ------------------ Ask Button ------------------
+if st.button("Ask to Bank Genie"):
+    if user_input.strip():
+        st.session_state.user_query = user_input
+        with st.spinner("Thinking like a banker..."):
+            st.session_state.response = get_bank_response(user_input)
 
 # ------------------ Output ------------------
 if st.session_state.response:

@@ -1,109 +1,260 @@
 import streamlit as st
 import openai
+import os
+import random
 
-# --- Set your OpenAI API key ---
-openai.api_key = "your-api-key"
+# ✅ Page Config
+st.set_page_config(page_title="🏦 Bank Genie", layout="centered")
 
-# --- Page Configuration ---
-st.set_page_config(page_title="Bank Genie", layout="centered")
+# ✅ Styles
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+    html, body, [class*="css"] {
+        font-family: 'Poppins', sans-serif;
+        background-color: #f4f4f5;
+    }
+    .main, .block-container { padding-top: 1rem !important; }
+    .container {
+        background-color: white;
+        padding: 2rem 1.5rem;
+        max-width: 700px;
+        margin: auto;
+        border-radius: 10px;
+    }
+    .title {
+        text-align: center;
+        font-size: 2rem;
+        font-weight: 600;
+        color: #1e3a8a;
+        margin-bottom: 0.25rem;
+    }
+    .subtitle {
+        font-size: 1rem;
+        color: #52525b;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    textarea {
+        height: 100px !important;
+        padding: 12px !important;
+        border: 1.5px solid #d1d5db !important;
+        border-radius: 8px !important;
+        font-size: 1rem !important;
+        resize: none !important;
+        background-color: #ffffff !important;
+        color: #111827 !important;
+    }
+    textarea:focus {
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
+        outline: none !important;
+    }
+    .responsive-buttons {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 2rem;
+    }
+    .responsive-buttons .btn {
+        flex: 1;
+        min-width: 140px;
+    }
+    .responsive-buttons button {
+        width: 100%;
+        background-color: black;
+        color: white;
+        padding: 0.75rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        cursor: pointer;
+        transition: transform 0.1s ease;
+    }
+    .responsive-buttons button:hover {
+        background-color: #111;
+        transform: translateY(-1px);
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# --- App Title & Header ---
-st.title("🏦 Bank Employees")
-st.markdown("⚡ **Accurate** • 🧠 **Instant** • 💼 **Professional**")
+# ✅ OpenAI API Key
+openai.api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 
-# --- Input Area ---
-st.text_input("❓ What’s your banking question?", key="query_input", label_visibility="collapsed")
-answer_format = st.selectbox("📄 Choose Answer Format", ["Short", "Detailed"], key="format_selector")
+# ✅ Refine Query
+def refine_query(raw_input):
+    prompt = f"""
+You are a helper that converts vague or poorly written banking queries into clear questions.
 
-# --- Buttons ---
-col1, col2 = st.columns([1, 1])
-with col1:
-    submit = st.button("💬 Ask Bank Genie")
-with col2:
-    clear = st.button("🧹 Clear")
+If the input is:
+- A single banking word like "loan" → expand into a proper question.
+- Grammatically incorrect or unclear → fix it.
+- Already good → return as is.
 
-# --- Clear Functionality ---
-if clear:
-    st.session_state.query_input = ""
-    st.experimental_rerun()
+INPUT:
+\"\"\"{raw_input}\"\"\"
 
-# --- Supported "Example" Keywords ---
-example_keywords = ["Example:", "उदाहरण:", "उदाहरणार्थ:", "📌 Example:"]
-
-# --- Answer/Example Splitter ---
-def split_answer_example(response):
-    for keyword in example_keywords:
-        if keyword in response:
-            parts = response.split(keyword, 1)
-            answer = parts[0].strip()
-            example = keyword + parts[1].strip()
-            return answer, example
-    return response.strip(), None
-
-# --- Simulate Vector Search (Replace with real retrieval logic) ---
-def get_context_from_kb(user_query):
-    # 🔁 Replace this with actual PDF vector search (LangChain, FAISS, etc.)
-    if "working capital" in user_query.lower():
-        return """
-Working capital finance is a short-term funding provided by banks to meet day-to-day operational expenses like salaries, rent, raw materials, etc. 
-It is not used for long-term investments. Example: A retail business might apply for working capital finance to buy stock ahead of a holiday season.
+Rewritten Question:
 """
-    return ""
-
-# --- Ask Bank Genie ---
-if submit and st.session_state.query_input.strip():
-    query = st.session_state.query_input.strip()
-    format_type = st.session_state.format_selector
-
-    # Step 1: Retrieve relevant content
-    kb_context = get_context_from_kb(query)
-
-    if not kb_context:
-        st.markdown("### ❌ Answer")
-        st.error("Sorry, I couldn't find relevant information in the knowledge base.")
-    else:
-        # Step 2: Strict Prompt
-        system_prompt = f"""
-You are Bank Genie, an assistant for Indian bank employees.
-
-ONLY use the following knowledge base content to answer the user's question. Do NOT use any outside knowledge or guess.
-
-Knowledge Base:
-\"\"\"
-{kb_context}
-\"\"\"
-
-Respond in this format only:
-✅ Answer: [short or detailed answer depending on user request]
-📌 Example: [Only if found in the knowledge base]
-
-If no answer or example is found in the knowledge base, clearly state that.
-"""
-
-        user_prompt = f"Question: {query}\nAnswer Format: {format_type}"
-
-        # Step 3: Call OpenAI with strict context
+    try:
         response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            temperature=0.2
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.4,
+            max_tokens=100
         )
+        return response['choices'][0]['message']['content'].strip()
+    except Exception as e:
+        st.error(f"Error refining question: {e}")
+        return raw_input
 
-        result = response['choices'][0]['message']['content']
-        answer, example = split_answer_example(result)
+# ✅ GPT Prompt
+def build_prompt(refined_query, detail_level):
+    return f"""
+You are Bank Genie, an internal AI assistant designed only for bank employees. Your sole purpose is to answer banking-related queries clearly and accurately, tailored to the needs of internal banking teams.
 
-        # Show Answer
-        st.markdown("### ✅ Answer")
-        st.success(answer)
+✅ You Can Answer Topics Like:
+Account opening/closure, KYC procedures, dormant accounts
+Deposits, withdrawals, cash-handling rules
+NEFT, RTGS, UPI, IMPS, cheque handling
+Loans (types, documentation, eligibility, interest)
+Internal software/tools (e.g., Finacle, CBS)
+RBI guidelines, audits, bank policies
+Staff-related queries only if tied to banking operations or policy
 
-        # Show Example
-        if example:
-            st.markdown("### 📌 Example")
-            st.info(example)
+❌ You Should NOT Answer:
+If the query is unrelated to banking, politely decline with:
+"I’m designed to answer only internal bank-related questions. Please ask something related to banking."
 
-# --- Footer ---
-st.markdown("---")
-st.markdown("Built with ❤️ by **SuperAI Labs** — Tailored for Indian Banks 🇮🇳")
+📝 Answer Style Based on User Preference:
+{"If Short response is requested:" if detail_level == "Short" else "If Detailed response is requested:"}
+{"Provide a summarized answer (1–3 lines)\nInclude one simple real-life example\nExample must use Indian context and INR" if detail_level == "Short" else "Provide a clear, helpful explanation (up to 5–6 lines)\nInclude one proper real-life example\nExample must use Indian context and INR"}
+
+🗣️ Language Rules:
+Always respond in the same language the user asked in
+Use Indian terminology and INR currency
+Keep the answer and example separated by a blank line
+Avoid repeating “Example” unnecessarily
+
+🌐 Dynamic Language Instruction (added at runtime):
+“Answer the question in this language: [detected language]. Use Indian context and INR for all examples. Keep the main answer and example clearly separated with a blank line.”
+
+QUESTION:
+\"\"\"{refined_query}\"\"\"
+"""
+
+# ✅ Answer Generator
+def generate_answer():
+    raw_input = st.session_state.query.strip()
+    if not raw_input:
+        st.warning("Please enter a bank-related question.")
+        return
+    refined_query = refine_query(raw_input)
+    st.session_state.query = refined_query
+
+    prompt = build_prompt(refined_query, st.session_state.detail_level)
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=random.uniform(0.4, 0.7),
+            max_tokens=400
+        )
+        st.session_state.answer = response['choices'][0]['message']['content'].strip()
+    except Exception as e:
+        st.error(f"Error generating answer: {e}")
+
+# ✅ Clear All
+def clear_all():
+    for key in ["query", "detail_level", "answer"]:
+        st.session_state.pop(key, None)
+    st.rerun()
+
+# ✅ Session State
+st.session_state.setdefault("query", "")
+st.session_state.setdefault("detail_level", "Short")
+st.session_state.setdefault("answer", "")
+
+# ✅ Layout
+st.markdown("<div class='container'>", unsafe_allow_html=True)
+st.markdown("<div class='title'>🏦 Bank Genie</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>🔐 Internal Assistant for Indian Bank Employees | ⚡ Accurate • ⚙️ Instant • 💼 Professional</div>", unsafe_allow_html=True)
+
+st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=130)
+st.session_state.detail_level = st.selectbox("📏 Choose Answer Format", ["Short", "Detailed"], index=0)
+
+# ✅ Buttons: Responsive layout
+st.markdown("""
+<div class="responsive-buttons">
+    <div class="btn">
+        <button style="
+            width: 100%;
+            background-color: black;
+            color: white;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+        ">💬 Ask Bank Genie</button>
+    </div>
+    <div class="btn">
+        <button style="
+            width: 100%;
+            background-color: black;
+            color: white;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+        ">🧹 Clear</button>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ✅ Button actions (Streamlit's button handling)
+if st.button("💬 Ask Bank Genie"):
+    generate_answer()
+
+if st.button("🧹 Clear"):
+    clear_all()
+
+# ✅ Answer Display
+if st.session_state.answer:
+    st.markdown("### 🧾 Answer")
+    parts = st.session_state.answer.strip().split("\n\n", 1)
+    main_answer = parts[0]
+    example_part = parts[1] if len(parts) > 1 else ""
+
+    st.markdown(f"""
+    <div style='background-color:#f9fafb; border:1px solid #e5e7eb; padding: 1.25rem; border-radius: 10px;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.06); font-size: 1rem; margin-bottom: 1.2rem;'>
+        {main_answer}
+    </div>
+    """, unsafe_allow_html=True)
+
+    if example_part:
+        st.markdown(f"""
+        <div style='background-color:#eef2ff; border:1px solid #c7d2fe; padding: 1.25rem; border-radius: 10px;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.05); font-size: 1rem;'>
+            {example_part}
+        </div>
+        """, unsafe_allow_html=True)
+
+st.markdown("</div>", unsafe_allow_html=True)
+
+# ✅ Footer
+st.markdown("""
+    <hr style='margin-top: 3rem;'>
+    <div style='text-align: center; font-size: 0.85rem; color: #6b7280;'>
+        🔐 Built with ❤️ by <strong>SuperAI Labs</strong> — Tailored for Indian Banks 🇮🇳
+    </div>
+""", unsafe_allow_html=True)

@@ -6,7 +6,7 @@ import random
 # ✅ Set Page Config
 st.set_page_config(page_title="🏦 Bank Genie", layout="centered")
 
-# ✅ Global Styles & Fix Top Spacing
+# ✅ Global Styles (Black & White Buttons + Clean Layout)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
@@ -61,21 +61,22 @@ st.markdown("""
     }
 
     .stButton > button {
-        font-size: 1rem;
-        padding: 0.65rem 1.2rem;
-        border-radius: 6px;
-        font-weight: 600;
+        font-size: 1rem !important;
+        padding: 0.65rem 1.2rem !important;
+        border-radius: 6px !important;
+        font-weight: 600 !important;
         border: none;
     }
 
     .stButton > button:first-child {
-        background-color: #2563eb;
-        color: white;
+        background-color: #000000 !important;
+        color: white !important;
     }
 
     .stButton > button:last-child {
-        background-color: #ef4444;
-        color: white;
+        background-color: #ffffff !important;
+        color: black !important;
+        border: 1.5px solid black !important;
     }
 
     @media (max-width: 600px) {

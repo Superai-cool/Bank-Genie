@@ -86,7 +86,12 @@ st.markdown("""
 """)
 
 # ------------------ Dropdown for Detail Level ------------------
-st.session_state.detail_level = st.selectbox("Choose answer detail level:", ["Short", "Detailed"], index=0)
+detail_level = st.selectbox(
+    "Choose answer detail level:",
+    ["Short", "Detailed"],
+    index=0 if st.session_state.detail_level == "Short" else 1
+)
+st.session_state.detail_level = detail_level
 
 # ------------------ Prompt Template ------------------
 BANK_GENIE_PROMPT = """
@@ -105,7 +110,7 @@ You are Bank Genie — an internal assistant for bank employees only. You answer
 ✅ For valid banking questions:
 """
 
-if st.session_state.detail_level == "Short":
+if detail_level == "Short":
     BANK_GENIE_PROMPT += """
 - Give a short, summarized answer (1–3 lines)
 - Include 1 simple real-life example (use Indian context and INR)
@@ -177,7 +182,8 @@ with col2:
 if clear_btn:
     st.session_state.user_query = ""
     st.session_state.response = None
-    st.rerun()  # clean restart with everything cleared
+    st.session_state.detail_level = "Short"
+    st.rerun()
 
 # ------------------ Ask Button Logic ------------------
 if ask_btn and user_query_input.strip():

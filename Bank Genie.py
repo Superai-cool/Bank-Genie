@@ -86,7 +86,7 @@ def load_pdf_from_github(pdf_url):
         text += page.extract_text()
     return text
 
-# ✅ GitHub Raw PDF URL
+# ✅ GitHub PDF link
 pdf_url = "https://raw.githubusercontent.com/Superai-cool/Bank-Genie/b2724bae6283a1524d3abcfaf80071961441ec11/bank_knowledge_base.pdf"
 knowledge_base = load_pdf_from_github(pdf_url)
 
@@ -117,7 +117,7 @@ Rewritten Question:
         st.error(f"Error refining question: {e}")
         return raw_input
 
-# ✅ Build GPT Prompt
+# ✅ Build Prompt
 def build_prompt(refined_query):
     detail = st.session_state.get("detail_level", "Short")
     return f"""
@@ -158,7 +158,7 @@ def generate_answer():
     except Exception as e:
         st.error(f"Error generating answer: {e}")
 
-# ✅ Clear All
+# ✅ Clear
 def clear_all():
     for key in ["query", "answer", "detail_level"]:
         st.session_state.pop(key, None)
@@ -191,13 +191,28 @@ with col2:
         clear_all()
 st.markdown("</div>", unsafe_allow_html=True)
 
-# ✅ Output Split (Answer + Example)
+# ✅ Output with smart example detection
 if st.session_state.answer:
     st.markdown("### ✅ Answer")
 
-    parts = st.session_state.answer.strip().split("\n\n", 1)
-    main_answer = parts[0]
-    example_part = parts[1] if len(parts) > 1 else ""
+    full_text = st.session_state.answer.strip()
+
+    # Try splitting by known example indicators
+    example_indicators = ["For example", "For instance", "E.g.", "Example:"]
+    split_index = -1
+
+    for indicator in example_indicators:
+        idx = full_text.find(indicator)
+        if idx != -1:
+            split_index = idx
+            break
+
+    if split_index != -1:
+        main_answer = full_text[:split_index].strip()
+        example_part = full_text[split_index:].strip()
+    else:
+        main_answer = full_text
+        example_part = ""
 
     # Main Answer Box
     st.markdown(f"""

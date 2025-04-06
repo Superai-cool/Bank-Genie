@@ -50,33 +50,33 @@ st.markdown("""
         box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
         outline: none !important;
     }
-    .responsive-buttons {
+    .button-row {
         display: flex;
-        justify-content: space-between;
         gap: 1rem;
-        flex-wrap: wrap;
         margin-top: 2rem;
     }
-    .responsive-buttons .btn {
-        flex: 1;
-        min-width: 140px;
+    .stButton > button {
+        font-size: 1rem !important;
+        padding: 0.65rem 1.2rem !important;
+        border-radius: 6px !important;
+        font-weight: 600 !important;
+        background-color: #000000 !important;
+        color: white !important;
+        border: none !important;
+        transition: all 0.15s ease-in-out;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
-    .responsive-buttons button {
-        width: 100%;
-        background-color: black;
-        color: white;
-        padding: 0.75rem;
-        border: none;
-        border-radius: 8px;
-        font-size: 1rem;
-        font-weight: 600;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        cursor: pointer;
-        transition: transform 0.1s ease;
-    }
-    .responsive-buttons button:hover {
-        background-color: #111;
+    .stButton > button:hover {
+        background-color: #111111 !important;
         transform: translateY(-1px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    .stButton > button:active {
+        transform: scale(0.98);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+    @media (max-width: 600px) {
+        .button-row { flex-direction: column; }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -111,7 +111,7 @@ Rewritten Question:
         st.error(f"Error refining question: {e}")
         return raw_input
 
-# ✅ GPT Prompt
+# ✅ Build GPT Prompt
 def build_prompt(refined_query, detail_level):
     return f"""
 You are Bank Genie, an internal AI assistant designed only for bank employees. Your sole purpose is to answer banking-related queries clearly and accurately, tailored to the needs of internal banking teams.
@@ -146,12 +146,13 @@ QUESTION:
 \"\"\"{refined_query}\"\"\"
 """
 
-# ✅ Answer Generator
+# ✅ Generate Answer
 def generate_answer():
     raw_input = st.session_state.query.strip()
     if not raw_input:
         st.warning("Please enter a bank-related question.")
         return
+
     refined_query = refine_query(raw_input)
     st.session_state.query = refined_query
 
@@ -167,7 +168,7 @@ def generate_answer():
     except Exception as e:
         st.error(f"Error generating answer: {e}")
 
-# ✅ Clear All
+# ✅ Clear
 def clear_all():
     for key in ["query", "detail_level", "answer"]:
         st.session_state.pop(key, None)
@@ -181,55 +182,29 @@ st.session_state.setdefault("answer", "")
 # ✅ Layout
 st.markdown("<div class='container'>", unsafe_allow_html=True)
 st.markdown("<div class='title'>🏦 Bank Genie</div>", unsafe_allow_html=True)
+
+# ✅ One-line subtitle with icons (fixed)
 st.markdown("<div class='subtitle'>🔐 Internal Assistant for Indian Bank Employees | ⚡ Accurate • ⚙️ Instant • 💼 Professional</div>", unsafe_allow_html=True)
 
+# ✅ Input
 st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=130)
 st.session_state.detail_level = st.selectbox("📏 Choose Answer Format", ["Short", "Detailed"], index=0)
 
-# ✅ Buttons: Responsive layout
-st.markdown("""
-<div class="responsive-buttons">
-    <div class="btn">
-        <button style="
-            width: 100%;
-            background-color: black;
-            color: white;
-            padding: 0.75rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            cursor: pointer;
-        ">💬 Ask Bank Genie</button>
-    </div>
-    <div class="btn">
-        <button style="
-            width: 100%;
-            background-color: black;
-            color: white;
-            padding: 0.75rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            cursor: pointer;
-        ">🧹 Clear</button>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+# ✅ Buttons
+st.markdown("<div class='button-row'>", unsafe_allow_html=True)
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("💬 Ask Bank Genie"):
+        generate_answer()
+with col2:
+    if st.button("🧹 Clear"):
+        clear_all()
+st.markdown("</div>", unsafe_allow_html=True)
 
-# ✅ Button actions (Streamlit's button handling)
-if st.button("💬 Ask Bank Genie"):
-    generate_answer()
-
-if st.button("🧹 Clear"):
-    clear_all()
-
-# ✅ Answer Display
+# ✅ Output
 if st.session_state.answer:
     st.markdown("### 🧾 Answer")
+
     parts = st.session_state.answer.strip().split("\n\n", 1)
     main_answer = parts[0]
     example_part = parts[1] if len(parts) > 1 else ""

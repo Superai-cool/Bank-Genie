@@ -3,10 +3,10 @@ import openai
 import os
 import random
 
-# ✅ Set Page Config
+# ✅ Page Config
 st.set_page_config(page_title="🏦 Bank Genie", layout="centered")
 
-# ✅ Global Styles
+# ✅ Styling
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
@@ -70,10 +70,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ✅ OpenAI API Key
+# ✅ OpenAI Key
 openai.api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 
-# ✅ Auto-fix: Single-word and grammar
+# ✅ Query Refinement (for single words & grammar fix)
 def refine_query(raw_input):
     prompt = f"""
 You are a helper that converts vague or poorly written banking queries into clear questions.
@@ -100,31 +100,38 @@ Rewritten Question:
         st.error(f"Error refining question: {e}")
         return raw_input
 
-# ✅ Build Bank Genie Prompt
+# ✅ Build Prompt Using Your Full Instruction Set
 def build_prompt(refined_query, detail_level):
-    detail_addon = {
-        "Short": "- Give a short, summarized answer (1–3 lines)\n- Include 1 simple real-life example (use Indian context and INR)",
-        "Detailed": "- Give a clear, helpful answer (up to 5–6 lines)\n- Include 1 proper real-life example with Indian context and INR"
-    }[detail_level]
-
     return f"""
-You are Bank Genie — an internal assistant for bank employees only. You answer only bank-related queries like:
-- Account opening/closure, KYC, dormant accounts
-- Deposits, withdrawals, cash handling rules
-- NEFT, RTGS, UPI, IMPS, cheque handling
-- Loans, documentation, eligibility
-- Internal tools like Finacle or CBS
-- Internal policies, RBI guidelines, audits
-- Staff-related questions only if tied to internal policies
+You are Bank Genie, an internal AI assistant designed only for bank employees. Your sole purpose is to answer banking-related queries clearly and accurately, tailored to the needs of internal banking teams.
 
-✅ For valid banking questions:
-{detail_addon}
+✅ You Can Answer Topics Like:
+Account opening/closure, KYC procedures, dormant accounts
+Deposits, withdrawals, cash-handling rules
+NEFT, RTGS, UPI, IMPS, cheque handling
+Loans (types, documentation, eligibility, interest)
+Internal software/tools (e.g., Finacle, CBS)
+RBI guidelines, audits, bank policies
+Staff-related queries only if tied to banking operations or policy
 
-🌐 Universal Instructions:
-- Keep answer and example on separate lines with space between
-- Answer in the same language the user asked
+❌ You Should NOT Answer:
+If the query is unrelated to banking, politely decline with:
+"I’m designed to answer only internal bank-related questions. Please ask something related to banking."
 
-QUERY:
+📝 Answer Style Based on User Preference:
+{"If Short response is requested:" if detail_level == "Short" else "If Detailed response is requested:"}
+{"Provide a summarized answer (1–3 lines)\nInclude one simple real-life example\nExample must use Indian context and INR" if detail_level == "Short" else "Provide a clear, helpful explanation (up to 5–6 lines)\nInclude one proper real-life example\nExample must use Indian context and INR"}
+
+🗣️ Language Rules:
+Always respond in the same language the user asked in
+Use Indian terminology and INR currency
+Keep the answer and example separated by a blank line
+Avoid repeating “Example” unnecessarily
+
+🌐 Dynamic Language Instruction (added at runtime):
+“Answer the question in this language: [detected language]. Use Indian context and INR for all examples. Keep the main answer and example clearly separated with a blank line.”
+
+QUESTION:
 \"\"\"{refined_query}\"\"\"
 """
 
@@ -150,13 +157,13 @@ def generate_answer():
     except Exception as e:
         st.error(f"Error generating answer: {e}")
 
-# ✅ Clear All
+# ✅ Clear State
 def clear_all():
     for key in ["query", "detail_level", "answer"]:
         st.session_state.pop(key, None)
     st.rerun()
 
-# ✅ Session Defaults
+# ✅ Session Setup
 st.session_state.setdefault("query", "")
 st.session_state.setdefault("detail_level", "Short")
 st.session_state.setdefault("answer", "")
@@ -169,7 +176,7 @@ st.markdown("<div class='subtitle'>Internal assistant for Indian bank employees.
 st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=130)
 st.session_state.detail_level = st.selectbox("📏 Choose Answer Format", ["Short", "Detailed"], index=0)
 
-# ✅ Action Buttons
+# ✅ Buttons
 st.markdown("<div class='button-row'>", unsafe_allow_html=True)
 col1, col2 = st.columns(2)
 with col1:
@@ -180,7 +187,7 @@ with col2:
         clear_all()
 st.markdown("</div>", unsafe_allow_html=True)
 
-# ✅ Output: Answer + Example
+# ✅ Output: Answer + Example Separation
 if st.session_state.answer:
     st.markdown("### 🧾 Answer")
 

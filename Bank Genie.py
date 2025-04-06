@@ -203,7 +203,7 @@ st.markdown("</div>", unsafe_allow_html=True)
 
 # ✅ Output
 if st.session_state.answer:
-    st.markdown("### 🧾 Answer")
+    st.markdown("### ✅ Answer")
 
     parts = st.session_state.answer.strip().split("\n\n", 1)
     main_answer = parts[0]

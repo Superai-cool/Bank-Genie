@@ -1,260 +1,187 @@
 import streamlit as st
 import openai
 import os
-import random
+from langdetect import detect
 
-# ✅ Page Config
-st.set_page_config(page_title="🏦 Bank Genie", layout="centered")
+# ------------------ App Configuration ------------------
+st.set_page_config(page_title="Bank Genie - Internal Assistant", layout="centered")
 
-# ✅ Styles
+# ------------------ Load OpenAI API Key ------------------
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    st.error("❌ OpenAI API key not found. Please set it in your Streamlit Cloud Secrets or local environment.")
+    st.stop()
+openai.api_key = api_key
+
+# ------------------ Styling ------------------
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
     html, body, [class*="css"] {
         font-family: 'Poppins', sans-serif;
-        background-color: #f4f4f5;
+        background-color: #f8f9fa;
     }
-    .main, .block-container { padding-top: 1rem !important; }
-    .container {
+    .block-container {
+        max-width: 650px;
         background-color: white;
-        padding: 2rem 1.5rem;
-        max-width: 700px;
+        border-radius: 1.5rem;
+        padding: 2rem;
         margin: auto;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .stTextInput>div>div>input {
+        border-radius: 0.75rem;
+        padding: 1rem;
+        font-size: 1rem;
+    }
+    .stButton>button {
+        font-size: 16px;
         border-radius: 10px;
-    }
-    .title {
-        text-align: center;
-        font-size: 2rem;
-        font-weight: 600;
-        color: #1e3a8a;
-        margin-bottom: 0.25rem;
-    }
-    .subtitle {
-        font-size: 1rem;
-        color: #52525b;
-        margin-bottom: 1.5rem;
-        text-align: center;
-    }
-    textarea {
-        height: 100px !important;
-        padding: 12px !important;
-        border: 1.5px solid #d1d5db !important;
-        border-radius: 8px !important;
-        font-size: 1rem !important;
-        resize: none !important;
-        background-color: #ffffff !important;
-        color: #111827 !important;
-    }
-    textarea:focus {
-        border-color: #2563eb !important;
-        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
-        outline: none !important;
-    }
-    .responsive-buttons {
-        display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        flex-wrap: wrap;
-        margin-top: 2rem;
-    }
-    .responsive-buttons .btn {
-        flex: 1;
-        min-width: 140px;
-    }
-    .responsive-buttons button {
+        padding: 10px 24px;
+        font-weight: bold;
         width: 100%;
-        background-color: black;
-        color: white;
-        padding: 0.75rem;
         border: none;
-        border-radius: 8px;
-        font-size: 1rem;
-        font-weight: 600;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        cursor: pointer;
-        transition: transform 0.1s ease;
+        margin-top: 10px;
+        background-color: #000000;
+        color: white;
     }
-    .responsive-buttons button:hover {
-        background-color: #111;
-        transform: translateY(-1px);
+    .custom-answer {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+    .example-line {
+        margin-top: 1rem;
+        font-style: italic;
+        color: #333333;
+        background-color: #f0f0f0;
+        padding: 10px;
+        border-radius: 8px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# ✅ OpenAI API Key
-openai.api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
+# ------------------ Session Initialization ------------------
+if "user_query" not in st.session_state:
+    st.session_state.user_query = ""
+if "response" not in st.session_state:
+    st.session_state.response = None
+if "detail_level" not in st.session_state:
+    st.session_state.detail_level = "Short"
 
-# ✅ Refine Query
-def refine_query(raw_input):
-    prompt = f"""
-You are a helper that converts vague or poorly written banking queries into clear questions.
+# ------------------ Header ------------------
+st.title("🏦 Bank Genie - Internal Q&A Assistant")
+st.markdown("""
+👋 Welcome to **Bank Genie** — Empowering Bank Teams with Instant, Multilingual Support.
 
-If the input is:
-- A single banking word like "loan" → expand into a proper question.
-- Grammatically incorrect or unclear → fix it.
-- Already good → return as is.
+💬 Ask any bank-related question below, and Bank Genie will provide accurate, helpful answers tailored to your preference — whether concise or in-depth.
 
-INPUT:
-\"\"\"{raw_input}\"\"\"
+📞 For further assistance or support, feel free to call or WhatsApp us at +91-8830720742.
+""")
 
-Rewritten Question:
+# ------------------ Detail Level Selector ------------------
+st.session_state.detail_level = st.selectbox(
+    "Choose answer detail level:",
+    ["Short", "Detailed"],
+    index=0 if st.session_state.detail_level == "Short" else 1
+)
+
+# ------------------ Prompt Template ------------------
+BANK_GENIE_PROMPT = """
+You are Bank Genie — an internal assistant for bank employees only. You answer only bank-related queries like:
+- Account opening/closure, KYC, dormant accounts
+- Deposits, withdrawals, cash handling rules
+- NEFT, RTGS, UPI, IMPS, cheque handling
+- Loans, documentation, eligibility
+- Internal tools like Finacle or CBS
+- Internal policies, RBI guidelines, audits
+- Staff-related questions only if tied to internal policies
+
+❌ Do NOT answer anything unrelated to banking. Respond with:
+"I’m designed to answer only internal bank-related questions. Please ask something related to banking."
+
+✅ For valid banking questions:
 """
+
+if st.session_state.detail_level == "Short":
+    BANK_GENIE_PROMPT += """
+- Give a short, summarized answer (1–3 lines)
+- Include 1 simple real-life example (use Indian context and INR)
+"""
+else:
+    BANK_GENIE_PROMPT += """
+- Give a clear, helpful answer (up to 5–6 lines)
+- Include 1 proper real-life example with Indian context and INR
+"""
+
+BANK_GENIE_PROMPT += """
+- Keep answer and example on separate lines with space between
+- Avoid repeating the word "Example" if it’s already used
+- Answer in the same language the user asked
+"""
+
+# ------------------ Language Detection ------------------
+def detect_user_language(text):
     try:
+        text = text.strip()
+        if len(text) < 10:
+            return "en"
+        lang_code = detect(text)
+        allowed_languages = {"en", "hi", "mr", "ta", "te", "gu", "kn", "bn", "ml", "pa", "or", "ur", "as", "ne", "si"}
+        return lang_code if lang_code in allowed_languages else "en"
+    except:
+        return "en"
+
+# ------------------ GPT Call ------------------
+def get_bank_response(query):
+    try:
+        query = query.strip()
+        if len(query.split()) <= 3 and not query.endswith("?"):
+            query = f"What is {query}?"
+        user_lang = detect_user_language(query)
+        lang_instruction = f"Answer the question in this language: {user_lang}. Use Indian context and INR for all examples. Keep the main answer and example clearly separated with a blank line."
         response = openai.ChatCompletion.create(
             model="gpt-4o",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.4,
-            max_tokens=100
+            messages=[
+                {"role": "system", "content": f"{BANK_GENIE_PROMPT}\n\n{lang_instruction}"},
+                {"role": "user", "content": query}
+            ],
+            temperature=0.3
         )
         return response['choices'][0]['message']['content'].strip()
     except Exception as e:
-        st.error(f"Error refining question: {e}")
-        return raw_input
+        st.error(f"❌ GPT Error: {e}")
+        return None
 
-# ✅ GPT Prompt
-def build_prompt(refined_query, detail_level):
-    return f"""
-You are Bank Genie, an internal AI assistant designed only for bank employees. Your sole purpose is to answer banking-related queries clearly and accurately, tailored to the needs of internal banking teams.
+# ------------------ Input Field ------------------
+user_input = st.text_input(
+    "Ask your question (in any language):",
+    value=st.session_state.user_query,
+    max_chars=300
+)
 
-✅ You Can Answer Topics Like:
-Account opening/closure, KYC procedures, dormant accounts
-Deposits, withdrawals, cash-handling rules
-NEFT, RTGS, UPI, IMPS, cheque handling
-Loans (types, documentation, eligibility, interest)
-Internal software/tools (e.g., Finacle, CBS)
-RBI guidelines, audits, bank policies
-Staff-related queries only if tied to banking operations or policy
+# ------------------ Ask Button ------------------
+if st.button("Ask to Bank Genie") and user_input.strip():
+    st.session_state.user_query = user_input
+    with st.spinner("Thinking like a banker..."):
+        st.session_state.response = get_bank_response(user_input)
 
-❌ You Should NOT Answer:
-If the query is unrelated to banking, politely decline with:
-"I’m designed to answer only internal bank-related questions. Please ask something related to banking."
-
-📝 Answer Style Based on User Preference:
-{"If Short response is requested:" if detail_level == "Short" else "If Detailed response is requested:"}
-{"Provide a summarized answer (1–3 lines)\nInclude one simple real-life example\nExample must use Indian context and INR" if detail_level == "Short" else "Provide a clear, helpful explanation (up to 5–6 lines)\nInclude one proper real-life example\nExample must use Indian context and INR"}
-
-🗣️ Language Rules:
-Always respond in the same language the user asked in
-Use Indian terminology and INR currency
-Keep the answer and example separated by a blank line
-Avoid repeating “Example” unnecessarily
-
-🌐 Dynamic Language Instruction (added at runtime):
-“Answer the question in this language: [detected language]. Use Indian context and INR for all examples. Keep the main answer and example clearly separated with a blank line.”
-
-QUESTION:
-\"\"\"{refined_query}\"\"\"
-"""
-
-# ✅ Answer Generator
-def generate_answer():
-    raw_input = st.session_state.query.strip()
-    if not raw_input:
-        st.warning("Please enter a bank-related question.")
-        return
-    refined_query = refine_query(raw_input)
-    st.session_state.query = refined_query
-
-    prompt = build_prompt(refined_query, st.session_state.detail_level)
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4o",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=random.uniform(0.4, 0.7),
-            max_tokens=400
-        )
-        st.session_state.answer = response['choices'][0]['message']['content'].strip()
-    except Exception as e:
-        st.error(f"Error generating answer: {e}")
-
-# ✅ Clear All
-def clear_all():
-    for key in ["query", "detail_level", "answer"]:
-        st.session_state.pop(key, None)
-    st.rerun()
-
-# ✅ Session State
-st.session_state.setdefault("query", "")
-st.session_state.setdefault("detail_level", "Short")
-st.session_state.setdefault("answer", "")
-
-# ✅ Layout
-st.markdown("<div class='container'>", unsafe_allow_html=True)
-st.markdown("<div class='title'>🏦 Bank Genie</div>", unsafe_allow_html=True)
-st.markdown("<div class='subtitle'>🔐 Internal Assistant for Indian Bank Employees | ⚡ Accurate • ⚙️ Instant • 💼 Professional</div>", unsafe_allow_html=True)
-
-st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=130)
-st.session_state.detail_level = st.selectbox("📏 Choose Answer Format", ["Short", "Detailed"], index=0)
-
-# ✅ Buttons: Responsive layout
-st.markdown("""
-<div class="responsive-buttons">
-    <div class="btn">
-        <button style="
-            width: 100%;
-            background-color: black;
-            color: white;
-            padding: 0.75rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            cursor: pointer;
-        ">💬 Ask Bank Genie</button>
-    </div>
-    <div class="btn">
-        <button style="
-            width: 100%;
-            background-color: black;
-            color: white;
-            padding: 0.75rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            cursor: pointer;
-        ">🧹 Clear</button>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# ✅ Button actions (Streamlit's button handling)
-if st.button("💬 Ask Bank Genie"):
-    generate_answer()
-
-if st.button("🧹 Clear"):
-    clear_all()
-
-# ✅ Answer Display
-if st.session_state.answer:
-    st.markdown("### 🧾 Answer")
-    parts = st.session_state.answer.strip().split("\n\n", 1)
-    main_answer = parts[0]
-    example_part = parts[1] if len(parts) > 1 else ""
-
-    st.markdown(f"""
-    <div style='background-color:#f9fafb; border:1px solid #e5e7eb; padding: 1.25rem; border-radius: 10px;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.06); font-size: 1rem; margin-bottom: 1.2rem;'>
-        {main_answer}
-    </div>
-    """, unsafe_allow_html=True)
-
-    if example_part:
+# ------------------ Output ------------------
+if st.session_state.response:
+    reply = st.session_state.response
+    if "\n\n" in reply:
+        answer, example = reply.split("\n\n", 1)
+        example_clean = example.strip().removeprefix("Example:").strip()
         st.markdown(f"""
-        <div style='background-color:#eef2ff; border:1px solid #c7d2fe; padding: 1.25rem; border-radius: 10px;
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.05); font-size: 1rem;'>
-            {example_part}
-        </div>
+        <div class='custom-answer'>{answer.strip()}</div>
+        <div class='example-line'>💡 Example: {example_clean}</div>
         """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"### ✅ Answer\n{reply}")
 
-st.markdown("</div>", unsafe_allow_html=True)
-
-# ✅ Footer
+# ------------------ Footer ------------------
 st.markdown("""
-    <hr style='margin-top: 3rem;'>
-    <div style='text-align: center; font-size: 0.85rem; color: #6b7280;'>
-        🔐 Built with ❤️ by <strong>SuperAI Labs</strong> — Tailored for Indian Banks 🇮🇳
-    </div>
+---
+<div style="text-align:center">
+<small>🔐 For internal banking use only | Powered by SuperAI Labs</small>
+</div>
 """, unsafe_allow_html=True)

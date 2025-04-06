@@ -117,7 +117,7 @@ Rewritten Question:
         st.error(f"Error refining question: {e}")
         return raw_input
 
-# ✅ Build Prompt (with short/detailed logic)
+# ✅ Build GPT Prompt
 def build_prompt(refined_query):
     detail = st.session_state.get("detail_level", "Short")
     return f"""
@@ -129,7 +129,7 @@ If the answer is not found, say:
 📘 Knowledge Base:
 \"\"\"{knowledge_base}\"\"\"
 
-📝 Response Style: {"Keep it short (1–3 lines)." if detail == "Short" else "Provide a detailed explanation (up to 6 lines)."}
+📝 Response Style: {"Keep it short (1–3 lines) and include a simple Indian example with INR." if detail == "Short" else "Give a detailed explanation (up to 6 lines) and include a real-world Indian example with INR."}
 
 ❓ Question:
 \"\"\"{refined_query}\"\"\"
@@ -158,7 +158,7 @@ def generate_answer():
     except Exception as e:
         st.error(f"Error generating answer: {e}")
 
-# ✅ Clear
+# ✅ Clear All
 def clear_all():
     for key in ["query", "answer", "detail_level"]:
         st.session_state.pop(key, None)
@@ -177,7 +177,7 @@ st.markdown("<div class='subtitle'>🔐 Internal Assistant for Indian Bank Emplo
 # ✅ Input
 st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=130)
 
-# ✅ Dropdown: Answer Format
+# ✅ Dropdown
 st.session_state.detail_level = st.selectbox("📏 Choose Answer Format", ["Short", "Detailed"], index=0)
 
 # ✅ Buttons
@@ -191,13 +191,30 @@ with col2:
         clear_all()
 st.markdown("</div>", unsafe_allow_html=True)
 
-# ✅ Output
+# ✅ Output Split (Answer + Example)
 if st.session_state.answer:
     st.markdown("### ✅ Answer")
+
+    parts = st.session_state.answer.strip().split("\n\n", 1)
+    main_answer = parts[0]
+    example_part = parts[1] if len(parts) > 1 else ""
+
+    # Main Answer Box
     st.markdown(f"""
     <div style='background-color:#f9fafb; border:1px solid #e5e7eb; padding: 1.25rem; border-radius: 10px;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.06); font-size: 1rem; margin-bottom: 1.2rem;'>{st.session_state.answer}</div>
+                box-shadow: 0 2px 6px rgba(0,0,0,0.06); font-size: 1rem; margin-bottom: 1.2rem;'>
+        {main_answer}
+    </div>
     """, unsafe_allow_html=True)
+
+    # Example Box
+    if example_part:
+        st.markdown(f"""
+        <div style='background-color:#eef2ff; border:1px solid #c7d2fe; padding: 1.25rem; border-radius: 10px;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.05); font-size: 1rem;'>
+            {example_part}
+        </div>
+        """, unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
 

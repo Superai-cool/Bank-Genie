@@ -76,9 +76,9 @@ if "detail_level" not in st.session_state:
 
 # ------------------ Clear App Function ------------------
 def clear_app():
-    for key in ["user_query", "response", "detail_level"]:
-        if key in st.session_state:
-            del st.session_state[key]
+    st.session_state.user_query = ""
+    st.session_state.response = None
+    st.session_state.detail_level = "Short"
     st.rerun()
 
 # ------------------ Header ------------------
@@ -165,8 +165,13 @@ def get_bank_response(query):
         st.error(f"❌ GPT Error: {e}")
         return None
 
-# ------------------ Input Field ------------------
-user_input = st.text_input("Ask your question (in any language):", value=st.session_state.user_query, max_chars=300)
+# ------------------ Input Field (with KEY) ------------------
+st.text_input(
+    "Ask your question (in any language):",
+    value=st.session_state.user_query,
+    key="user_query",
+    max_chars=300
+)
 
 # ------------------ Buttons ------------------
 col1, col2 = st.columns([3, 1])
@@ -175,15 +180,14 @@ with col1:
 with col2:
     clear_btn = st.button("Clear")
 
-# ------------------ Clear Button Action ------------------
+# ------------------ Clear Action ------------------
 if clear_btn:
     clear_app()
 
-# ------------------ Ask Button Logic ------------------
-if ask_btn and user_input.strip():
-    st.session_state.user_query = user_input
+# ------------------ Ask Action ------------------
+if ask_btn and st.session_state.user_query.strip():
     with st.spinner("Thinking like a banker..."):
-        st.session_state.response = get_bank_response(user_input)
+        st.session_state.response = get_bank_response(st.session_state.user_query)
 
 # ------------------ Output ------------------
 if st.session_state.response:

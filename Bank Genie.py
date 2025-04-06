@@ -184,7 +184,9 @@ st.markdown("<div class='container'>", unsafe_allow_html=True)
 st.markdown("<div class='title'>🏦 Bank Genie</div>", unsafe_allow_html=True)
 
 # ✅ One-liner subtitle
-st.markdown("<div class='subtitle'>Internal assistant for Indian bank employees. Accurate. Instant. Professional.</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>🔐 Internal Assistant for Indian Bank Employees | ⚡ Accurate • ⚙️ Instant • 💼 Professional
+
+</div>", unsafe_allow_html=True)
 
 # ✅ Input Area
 st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=130)

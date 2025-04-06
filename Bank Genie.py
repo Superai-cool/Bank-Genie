@@ -6,7 +6,7 @@ import random
 # ✅ Set Page Config
 st.set_page_config(page_title="🏦 Bank Genie", layout="centered")
 
-# ✅ Global Styles – Black Floating Buttons + Layout Fix
+# ✅ Global Styles – Black Floating Buttons + Dropdown + Mobile-Friendly
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
@@ -160,7 +160,7 @@ st.markdown("<div class='subtitle'>Internal assistant for Indian bank employees.
 
 st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=130)
 
-st.session_state.detail_level = st.radio("📏 Choose Answer Format", ["Short", "Detailed"], horizontal=True)
+st.session_state.detail_level = st.selectbox("📏 Choose Answer Format", ["Short", "Detailed"], index=0)
 
 # ✅ Buttons: Ask & Clear
 st.markdown("<div class='button-row'>", unsafe_allow_html=True)

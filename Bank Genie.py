@@ -2,109 +2,86 @@ import streamlit as st
 import openai
 import os
 from langdetect import detect
+import uuid
 
 # ------------------ Config ------------------
-st.set_page_config(page_title="Bank Genie - Internal Assistant", layout="centered")
+st.set_page_config(page_title="Bank Genie", layout="centered")
+
+# ------------------ Load API ------------------
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
-    st.error("❌ OpenAI API key not found.")
+    st.error("API key missing.")
     st.stop()
 openai.api_key = api_key
 
-# ------------------ App State ------------------
+# ------------------ Session Setup ------------------
 if "response" not in st.session_state:
     st.session_state.response = None
+if "form_id" not in st.session_state:
+    st.session_state.form_id = str(uuid.uuid4())  # Unique form ID
 
-# ------------------ Clear Function ------------------
-def clear_all():
+# ------------------ Reset Function ------------------
+def reset_form():
     st.session_state.response = None
-    st.session_state["query_input"] = ""
-    st.session_state["detail_select"] = "Short"
+    st.session_state.form_id = str(uuid.uuid4())  # Force new form
     st.experimental_rerun()
 
 # ------------------ Layout ------------------
-st.title("🏦 Bank Genie - Internal Q&A Assistant")
-st.markdown("""
-👋 Welcome to **Bank Genie** — Empowering Bank Teams with Instant, Multilingual Support.
+st.title("🏦 Bank Genie - Internal Assistant")
+st.markdown("Ask your banking question below. Genie will respond shortly.")
 
-💬 Ask any bank-related question below, and Bank Genie will provide accurate, helpful answers tailored to your preference — whether concise or in-depth.
-""")
+# ------------------ Form ------------------
+with st.form(key=st.session_state.form_id):
+    detail = st.selectbox("Choose answer detail level:", ["Short", "Detailed"])
+    question = st.text_area("Ask your question:", height=100)
 
-# ------------------ Prompt Setup ------------------
-def build_prompt(detail_level):
-    base = """
-You are Bank Genie — an internal assistant for bank employees only. Only respond to valid bank-related queries.
-
-❌ If not related to banking, respond: "I’m designed to answer only internal bank-related questions. Please ask something related to banking."
-
-✅ Otherwise:
-"""
-    if detail_level == "Short":
-        base += "- Short answer (1–3 lines) with 1 INR-based example.\n"
-    else:
-        base += "- Detailed answer (up to 6 lines) with 1 INR-based example.\n"
-    base += "- Keep answer and example on separate lines.\n"
-    return base
-
-# ------------------ Detect Language ------------------
-def detect_user_language(text):
-    try:
-        return detect(text.strip())
-    except:
-        return "en"
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        ask = st.form_submit_button("Ask to Bank Genie")
+    with col2:
+        clear = st.form_submit_button("Clear")
 
 # ------------------ GPT Function ------------------
-def get_bank_response(query, detail_level):
-    lang = detect_user_language(query)
-    prompt = build_prompt(detail_level)
-    prompt += f"\nAnswer in: {lang.upper()}\n\nQuery: {query}"
+def get_response(q, d):
+    lang = detect(q.strip()) if q.strip() else "en"
+    prompt = (
+        "You are Bank Genie, a multilingual internal assistant for bank staff.\n"
+        "Only answer internal banking questions such as KYC, loans, deposits, etc.\n"
+        "If irrelevant, reply: 'This assistant only answers internal bank-related queries.'\n"
+        f"Provide a {'short' if d == 'Short' else 'detailed'} answer and 1 INR-based example.\n"
+        "Answer and example should be clearly separated.\n"
+        f"Language: {lang.upper()}\n\nQuestion: {q}"
+    )
     try:
-        result = openai.ChatCompletion.create(
+        res = openai.ChatCompletion.create(
             model="gpt-4o",
             messages=[
                 {"role": "system", "content": prompt},
-                {"role": "user", "content": query}
+                {"role": "user", "content": q}
             ],
-            temperature=0.3,
+            temperature=0.3
         )
-        return result.choices[0].message.content.strip()
+        return res.choices[0].message.content.strip()
     except Exception as e:
-        st.error(f"❌ GPT Error: {e}")
-        return None
+        return f"❌ GPT Error: {e}"
 
-# ------------------ Form: Input + Buttons ------------------
-with st.form("bank_genie_form"):
-    detail_level = st.selectbox("Choose answer detail level:", ["Short", "Detailed"], key="detail_select")
-    user_query = st.text_area("Ask your question (in any language):", key="query_input", height=100)
-    
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        submit = st.form_submit_button("Ask to Bank Genie")
-    with col2:
-        reset = st.form_submit_button("Clear")
-
-# ------------------ Form Actions ------------------
-if submit and user_query.strip():
+# ------------------ Logic ------------------
+if ask and question.strip():
     with st.spinner("Thinking like a banker..."):
-        st.session_state.response = get_bank_response(user_query, detail_level)
+        st.session_state.response = get_response(question, detail)
 
-if reset:
-    clear_all()
+if clear:
+    reset_form()
 
-# ------------------ Output ------------------
+# ------------------ Display ------------------
 if st.session_state.response:
-    reply = st.session_state.response
-    if "\n\n" in reply:
-        ans, ex = reply.split("\n\n", 1)
-        st.markdown(f"**Answer:**\n{ans.strip()}")
+    r = st.session_state.response
+    if "\n\n" in r:
+        a, ex = r.split("\n\n", 1)
+        st.markdown(f"**Answer:**\n{a.strip()}")
         st.markdown(f"💡 *Example:* {ex.strip()}")
     else:
-        st.markdown(f"**Answer:**\n{reply}")
+        st.markdown(r)
 
 # ------------------ Footer ------------------
-st.markdown("""
----
-<div style="text-align:center">
-<small>🔐 Internal use only | © SuperAI Labs</small>
-</div>
-""", unsafe_allow_html=True)
+st.markdown("---\n<center><small>🔐 Internal use only | Powered by SuperAI Labs</small></center>", unsafe_allow_html=True)

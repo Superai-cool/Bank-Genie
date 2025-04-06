@@ -9,7 +9,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 # Streamlit Page Config
 st.set_page_config(page_title="🏦 Bank Genie", layout="centered", initial_sidebar_state="collapsed")
 
-# 🔥 Global Style Overrides - Mobile-First & Floating Buttons
+# 🔥 Global Style Overrides - Mobile Friendly, Floating Buttons
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
@@ -92,14 +92,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 🔄 Session State Defaults
-st.session_state.setdefault("query", "")
-st.session_state.setdefault("detail_level", "Short")
-st.session_state.setdefault("language", "English")
-st.session_state.setdefault("answer", "")
-
-# 🧠 Prompt Builder
-def build_prompt(query, detail_level, lang):
+# 🧠 Prompt Builder (language inferred from user input)
+def build_prompt(query, detail_level):
     detail_addon = {
         "Short": "- Give a short, summarized answer (1–3 lines)\n- Include 1 simple real-life example (use Indian context and INR)",
         "Detailed": "- Give a clear, helpful answer (up to 5–6 lines)\n- Include 1 proper real-life example with Indian context and INR"
@@ -124,15 +118,15 @@ You are Bank Genie — an internal assistant for bank employees only. You answer
 🌐 Universal Instructions:
 - Keep answer and example on separate lines with space between
 - Avoid repeating the word 'Example' if already used
-- Answer in the same language the user asked (language: {lang})
+- Answer in the same language the user asked
 
 QUERY:
 \"\"\"{query}\"\"\"
 """
 
-# 🧠 Answer Generator
+# 🚀 Generate Answer
 def generate_answer():
-    prompt = build_prompt(st.session_state.query, st.session_state.detail_level, st.session_state.language)
+    prompt = build_prompt(st.session_state.query, st.session_state.detail_level)
     try:
         response = openai.ChatCompletion.create(
             model="gpt-4o",
@@ -145,13 +139,18 @@ def generate_answer():
         st.error(f"Error: {e}")
         st.session_state.answer = ""
 
-# 🧼 Clear
+# 🧼 Clear App
 def clear_app():
-    for key in ["query", "detail_level", "language", "answer"]:
+    for key in ["query", "detail_level", "answer"]:
         st.session_state.pop(key, None)
     st.rerun()
 
-# 🌟 UI Components
+# 🔄 Session Defaults
+st.session_state.setdefault("query", "")
+st.session_state.setdefault("detail_level", "Short")
+st.session_state.setdefault("answer", "")
+
+# 💬 Layout
 with st.container():
     st.markdown("<div class='main-container'>", unsafe_allow_html=True)
 
@@ -160,22 +159,18 @@ with st.container():
 
     st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=120)
 
+    st.session_state.detail_level = st.radio("📏 Answer Format", ["Short", "Detailed"], index=["Short", "Detailed"].index(st.session_state.detail_level))
+
+    # 💡 Buttons: Generate + Clear
+    st.markdown("<div class='floating-buttons'>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
-        st.session_state.detail_level = st.radio("📏 Answer Format", ["Short", "Detailed"], index=["Short", "Detailed"].index(st.session_state.detail_level))
-    with col2:
-        st.session_state.language = st.selectbox("🌐 Language", ["English", "Hindi", "Marathi", "Kannada", "Tamil"], index=0)
-
-    # 🔘 Buttons: Generate + Clear
-    st.markdown("<div class='floating-buttons'>", unsafe_allow_html=True)
-    colA, colB = st.columns(2)
-    with colA:
         if st.button("💡 Generate Answer", type="primary"):
             if st.session_state.query.strip():
                 generate_answer()
             else:
-                st.warning("Please enter a bank-related question.")
-    with colB:
+                st.warning("Please enter a valid bank-related question.")
+    with col2:
         if st.button("🧹 Clear"):
             clear_app()
     st.markdown("</div>", unsafe_allow_html=True)
@@ -187,7 +182,7 @@ with st.container():
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-# 👣 Footer
+# 🌟 Footer
 st.markdown("""
     <hr style='margin-top: 2.5rem;'>
     <div style='text-align: center; font-size: 0.85rem; color: #6b7280;'>

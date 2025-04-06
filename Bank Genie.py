@@ -3,6 +3,7 @@ import openai
 import requests
 import PyPDF2
 import random
+import os  # ✅ FIX: Import added
 from io import BytesIO
 
 # ✅ Page Config
@@ -68,7 +69,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ✅ OpenAI API Key
+# ✅ OpenAI Key Setup
 openai.api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 
 # ✅ Load PDF from GitHub
@@ -85,11 +86,11 @@ def load_pdf_from_github(pdf_url):
         text += page.extract_text()
     return text
 
-# ✅ Actual GitHub Raw PDF URL
+# ✅ GitHub Raw PDF Link
 pdf_url = "https://raw.githubusercontent.com/Superai-cool/Bank-Genie/b2724bae6283a1524d3abcfaf80071961441ec11/bank_knowledge_base.pdf"
 knowledge_base = load_pdf_from_github(pdf_url)
 
-# ✅ Refine user input to clean question
+# ✅ Refine Question
 def refine_query(raw_input):
     prompt = f"""
 You are a helper that converts vague or poorly written banking queries into clear questions.
@@ -116,7 +117,7 @@ Rewritten Question:
         st.error(f"Error refining question: {e}")
         return raw_input
 
-# ✅ Use only the PDF to answer
+# ✅ GPT Prompt using ONLY PDF
 def build_prompt(refined_query):
     return f"""
 You are Bank Genie, an AI assistant for bank employees. 
@@ -133,7 +134,7 @@ If the answer is not found, say:
 🧠 Answer:
 """
 
-# ✅ Generate the answer using OpenAI
+# ✅ Generate Answer
 def generate_answer():
     raw_input = st.session_state.query.strip()
     if not raw_input:
@@ -154,22 +155,22 @@ def generate_answer():
     except Exception as e:
         st.error(f"Error generating answer: {e}")
 
-# ✅ Clear all session state
+# ✅ Clear All
 def clear_all():
     for key in ["query", "answer"]:
         st.session_state.pop(key, None)
     st.rerun()
 
-# ✅ Initialize Session State
+# ✅ Session Defaults
 st.session_state.setdefault("query", "")
 st.session_state.setdefault("answer", "")
 
-# ✅ Layout & UI
+# ✅ Layout
 st.markdown("<div class='container'>", unsafe_allow_html=True)
 st.markdown("<div class='title'>🏦 Bank Genie</div>", unsafe_allow_html=True)
 st.markdown("<div class='subtitle'>🔐 Internal Assistant for Indian Bank Employees | ⚡ Accurate • ⚙️ Instant • 💼 Professional</div>", unsafe_allow_html=True)
 
-# ✅ User Input
+# ✅ Input
 st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=130)
 
 # ✅ Buttons

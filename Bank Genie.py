@@ -6,7 +6,7 @@ import random
 # ✅ Page Config
 st.set_page_config(page_title="🏦 Bank Genie", layout="centered")
 
-# ✅ Styling
+# ✅ Styles
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
@@ -22,8 +22,18 @@ st.markdown("""
         margin: auto;
         border-radius: 10px;
     }
-    .title { text-align: center; font-size: 2rem; font-weight: 600; color: #1e3a8a; margin-bottom: 0.25rem; }
-    .subtitle { text-align: center; font-size: 1rem; color: #52525b; margin-bottom: 1.5rem; }
+    .title {
+        text-align: center;
+        font-size: 2rem;
+        font-weight: 600;
+        color: #1e3a8a;
+        margin-bottom: 0.25rem;
+    }
+    .subtitle {
+        font-size: 1rem;
+        color: #52525b;
+        margin-bottom: 1.5rem;
+    }
     textarea {
         height: 100px !important;
         padding: 12px !important;
@@ -70,10 +80,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ✅ OpenAI Key
+# ✅ OpenAI API Key
 openai.api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 
-# ✅ Query Refinement (for single words & grammar fix)
+# ✅ Grammar & Keyword Fix
 def refine_query(raw_input):
     prompt = f"""
 You are a helper that converts vague or poorly written banking queries into clear questions.
@@ -100,7 +110,7 @@ Rewritten Question:
         st.error(f"Error refining question: {e}")
         return raw_input
 
-# ✅ Build Prompt Using Your Full Instruction Set
+# ✅ Full Instruction Prompt
 def build_prompt(refined_query, detail_level):
     return f"""
 You are Bank Genie, an internal AI assistant designed only for bank employees. Your sole purpose is to answer banking-related queries clearly and accurately, tailored to the needs of internal banking teams.
@@ -157,13 +167,13 @@ def generate_answer():
     except Exception as e:
         st.error(f"Error generating answer: {e}")
 
-# ✅ Clear State
+# ✅ Clear App State
 def clear_all():
     for key in ["query", "detail_level", "answer"]:
         st.session_state.pop(key, None)
     st.rerun()
 
-# ✅ Session Setup
+# ✅ Defaults
 st.session_state.setdefault("query", "")
 st.session_state.setdefault("detail_level", "Short")
 st.session_state.setdefault("answer", "")
@@ -171,8 +181,18 @@ st.session_state.setdefault("answer", "")
 # ✅ App UI
 st.markdown("<div class='container'>", unsafe_allow_html=True)
 st.markdown("<div class='title'>🏦 Bank Genie</div>", unsafe_allow_html=True)
-st.markdown("<div class='subtitle'>Internal assistant for Indian bank employees. Accurate. Instant. Professional.</div>", unsafe_allow_html=True)
 
+# ✅ 👋 New Spacious Intro
+st.markdown("""
+<div class='subtitle' style='line-height: 1.8; text-align: center;'>
+    👋 <strong>Welcome to Bank Genie — Empowering Bank Teams with Instant, Multilingual Support</strong><br><br>
+    💬 Ask any bank-related question below, and Bank Genie will provide accurate, helpful answers tailored to your preference — whether concise or detailed.<br><br>
+    📞 For further assistance or support, feel free to call or 
+    <a href="https://wa.me/918830720742" target="_blank" style="text-decoration: none; color: #1d4ed8;"><strong>WhatsApp us at +91-8830720742</strong></a>.
+</div>
+""", unsafe_allow_html=True)
+
+# ✅ Input
 st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=130)
 st.session_state.detail_level = st.selectbox("📏 Choose Answer Format", ["Short", "Detailed"], index=0)
 
@@ -187,7 +207,7 @@ with col2:
         clear_all()
 st.markdown("</div>", unsafe_allow_html=True)
 
-# ✅ Output: Answer + Example Separation
+# ✅ Output: Answer & Example
 if st.session_state.answer:
     st.markdown("### 🧾 Answer")
 

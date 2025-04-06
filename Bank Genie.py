@@ -78,12 +78,12 @@ if "detail_level" not in st.session_state:
 # ------------------ UI Header ------------------
 st.title("🏦 Bank Genie - Internal Q&A Assistant")
 st.markdown("""
-Welcome to **Bank Genie** — Empowering Bank Teams with Instant, Multilingual Support
+👋 Welcome to **Bank Genie** — Empowering Bank Teams with Instant, Multilingual Support
 .
 
-Ask any bank-related question below, and Bank Genie will provide accurate, helpful answers tailored to your preference — whether concise or in-depth.
+💬 Ask any bank-related question below, and Bank Genie will provide accurate, helpful answers tailored to your preference — whether concise or in-depth.
 
-🔒 Non-banking queries will be politely declined.
+📞 For further assistance or support, feel free to **call or WhatsApp** us at +91-8830720742..
 """)
 
 # ------------------ Dropdown for Detail Level ------------------

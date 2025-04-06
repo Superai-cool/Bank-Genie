@@ -187,7 +187,7 @@ st.markdown("<div class='title'>🏦 Bank Genie</div>", unsafe_allow_html=True)
 st.markdown("<div class='subtitle'>🔐 Internal Assistant for Indian Bank Employees | ⚡ Accurate • ⚙️ Instant • 💼 Professional</div>", unsafe_allow_html=True)
 
 # ✅ Input
-st.session_state.query = st.text_area("❓ Ask a bank-related question", value=st.session_state.query, height=130)
+st.session_state.query = st.text_area("🗨️ Ask a bank-related question", value=st.session_state.query, height=130)
 st.session_state.detail_level = st.selectbox("✍️ Choose Answer Format", ["Short", "Detailed"], index=0)
 
 # ✅ Buttons

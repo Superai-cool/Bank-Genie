@@ -49,6 +49,9 @@ st.markdown("""
         border: none;
         margin-top: 10px;
     }
+    .stButton:nth-child(2)>button {
+        background-color: #dc3545 !important;
+    }
     .custom-answer {
         font-size: 1rem;
         margin-bottom: 1rem;
@@ -83,8 +86,7 @@ Ask any bank-related question below.
 """)
 
 # ------------------ Dropdown for Detail Level ------------------
-detail_level = st.selectbox("Choose answer detail level:", ["Short", "Detailed"], index=0)
-st.session_state.detail_level = detail_level
+st.session_state.detail_level = st.selectbox("Choose answer detail level:", ["Short", "Detailed"], index=0)
 
 # ------------------ Prompt Template ------------------
 BANK_GENIE_PROMPT = """
@@ -103,7 +105,7 @@ You are Bank Genie — an internal assistant for bank employees only. You answer
 ✅ For valid banking questions:
 """
 
-if detail_level == "Short":
+if st.session_state.detail_level == "Short":
     BANK_GENIE_PROMPT += """
 - Give a short, summarized answer (1–3 lines)
 - Include 1 simple real-life example (use Indian context and INR)
@@ -157,24 +159,22 @@ def get_bank_response(query):
         st.error(f"❌ GPT Error: {e}")
         return None
 
-# ------------------ Input ------------------
+# ------------------ Input Field ------------------
 st.session_state.user_query = st.text_input("Ask your question (in any language):", value=st.session_state.user_query, max_chars=300)
 
-# ------------------ Buttons ------------------
+# ------------------ Action Buttons ------------------
 col1, col2 = st.columns([3, 1])
-
 with col1:
     ask_btn = st.button("Ask to Bank Genie")
 with col2:
     clear_btn = st.button("Clear")
 
-# ------------------ Clear Function ------------------
+# ------------------ Clear Logic ------------------
 if clear_btn:
     st.session_state.user_query = ""
     st.session_state.response = None
-    st.experimental_rerun()
 
-# ------------------ Answer Generation ------------------
+# ------------------ Get Answer ------------------
 if ask_btn and st.session_state.user_query.strip():
     with st.spinner("Thinking like a banker..."):
         st.session_state.response = get_bank_response(st.session_state.user_query)

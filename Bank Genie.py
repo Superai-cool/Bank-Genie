@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as st 
 import openai
 import os
 import random
@@ -211,17 +211,13 @@ if st.session_state.answer:
 
     st.markdown(f"""
     <div style='background-color:#f9fafb; border:1px solid #e5e7eb; padding: 1.25rem; border-radius: 10px;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.06); font-size: 1rem; margin-bottom: 1.2rem;'>
-        {main_answer}
-    </div>
+                box-shadow: 0 2px 6px rgba(0,0,0,0.06); font-size: 1rem; margin-bottom: 1.2rem;'>{main_answer}</div>
     """, unsafe_allow_html=True)
 
     if example_part:
         st.markdown(f"""
         <div style='background-color:#eef2ff; border:1px solid #c7d2fe; padding: 1.25rem; border-radius: 10px;
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.05); font-size: 1rem;'>
-            {example_part}
-        </div>
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.05); font-size: 1rem;'>{example_part}</div>
         """, unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)

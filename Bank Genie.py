@@ -159,16 +159,13 @@ def get_bank_response(query):
         st.error(f"❌ GPT Error: {e}")
         return None
 
-# ------------------ Input Field (Wrapped in Placeholder) ------------------
-input_placeholder = st.empty()
-
-with input_placeholder:
-    st.session_state.user_query = st.text_input(
-        "Ask your question (in any language):",
-        value=st.session_state.user_query,
-        max_chars=300,
-        key="question_input"
-    )
+# ------------------ Input Field ------------------
+st.session_state.user_query = st.text_input(
+    "Ask your question (in any language):",
+    value=st.session_state.user_query,
+    max_chars=300,
+    key="question_input"
+)
 
 # ------------------ Action Buttons ------------------
 col1, col2 = st.columns([3, 1])
@@ -181,8 +178,7 @@ with col2:
 if clear_btn:
     st.session_state.user_query = ""
     st.session_state.response = None
-    input_placeholder.empty()
-    input_placeholder.text_input("Ask your question (in any language):", value="", key="question_input")
+    st.session_state["question_input"] = ""  # Properly resets input field
 
 # ------------------ Generate Answer ------------------
 if ask_btn and st.session_state.user_query.strip():

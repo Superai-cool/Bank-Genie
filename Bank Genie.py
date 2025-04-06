@@ -111,33 +111,40 @@ Rewritten Question:
         st.error(f"Error refining question: {e}")
         return raw_input
 
-# ✅ Build GPT Prompt
+# ✅ Build GPT Prompt with improved example instruction
 def build_prompt(refined_query, detail_level):
     return f"""
 You are Bank Genie, an internal AI assistant designed only for bank employees. Your sole purpose is to answer banking-related queries clearly and accurately, tailored to the needs of internal banking teams.
 
 ✅ You Can Answer Topics Like:
-Account opening/closure, KYC procedures, dormant accounts
-Deposits, withdrawals, cash-handling rules
-NEFT, RTGS, UPI, IMPS, cheque handling
-Loans (types, documentation, eligibility, interest)
-Internal software/tools (e.g., Finacle, CBS)
-RBI guidelines, audits, bank policies
+Account opening/closure, KYC procedures, dormant accounts  
+Deposits, withdrawals, cash-handling rules  
+NEFT, RTGS, UPI, IMPS, cheque handling  
+Loans (types, documentation, eligibility, interest)  
+Internal software/tools (e.g., Finacle, CBS)  
+RBI guidelines, audits, bank policies  
 Staff-related queries only if tied to banking operations or policy
 
 ❌ You Should NOT Answer:
-If the query is unrelated to banking, politely decline with:
+If the query is unrelated to banking, politely decline with:  
 "I’m designed to answer only internal bank-related questions. Please ask something related to banking."
 
 📝 Answer Style Based on User Preference:
 {"If Short response is requested:" if detail_level == "Short" else "If Detailed response is requested:"}
-{"Provide a summarized answer (1–3 lines)\nInclude one simple real-life example\nExample must use Indian context and INR" if detail_level == "Short" else "Provide a clear, helpful explanation (up to 5–6 lines)\nInclude one proper real-life example\nExample must use Indian context and INR"}
+{"Provide a summarized answer (1–3 lines)\nInclude one real-life example below the answer" if detail_level == "Short" else "Provide a clear explanation (5–6 lines max)\nInclude one real-life example below the answer"}
+
+✅ Example Instruction:
+The example must:
+- Use Indian names and INR currency
+- Mention city, income, loan amount, interest rate, tenure
+- Be realistic and easy to understand in 2–3 lines
+- Start with “For example,” or “For instance,”
 
 🗣️ Language Rules:
-Always respond in the same language the user asked in
-Use Indian terminology and INR currency
-Keep the answer and example separated by a blank line
-Avoid repeating “Example” unnecessarily
+Always respond in the same language the user asked in  
+Use Indian terminology and INR currency  
+Keep the main answer and example clearly separated by a blank line  
+Avoid repeating the word “Example” as a heading
 
 🌐 Dynamic Language Instruction (added at runtime):
 “Answer the question in this language: [detected language]. Use Indian context and INR for all examples. Keep the main answer and example clearly separated with a blank line.”
@@ -182,13 +189,11 @@ st.session_state.setdefault("answer", "")
 # ✅ Layout
 st.markdown("<div class='container'>", unsafe_allow_html=True)
 st.markdown("<div class='title'>🏦 Bank Genie</div>", unsafe_allow_html=True)
-
-# ✅ One-line subtitle with icons (fixed)
 st.markdown("<div class='subtitle'>🔐 Internal Assistant for Indian Bank Employees | ⚡ Accurate • ⚙️ Instant • 💼 Professional</div>", unsafe_allow_html=True)
 
 # ✅ Input
-st.session_state.query = st.text_area("🗨️ Ask a bank-related question", value=st.session_state.query, height=130)
-st.session_state.detail_level = st.selectbox("✍️ Choose Answer Format", ["Short", "Detailed"], index=0)
+st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=130)
+st.session_state.detail_level = st.selectbox("📏 Choose Answer Format", ["Short", "Detailed"], index=0)
 
 # ✅ Buttons
 st.markdown("<div class='button-row'>", unsafe_allow_html=True)

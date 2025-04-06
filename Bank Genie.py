@@ -33,6 +33,7 @@ st.markdown("""
         font-size: 1rem;
         color: #52525b;
         margin-bottom: 1.5rem;
+        text-align: center;
     }
     textarea {
         height: 100px !important;
@@ -80,10 +81,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ✅ OpenAI API Key
+# ✅ OpenAI Key
 openai.api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 
-# ✅ Query Refinement
+# ✅ Refine Query
 def refine_query(raw_input):
     prompt = f"""
 You are a helper that converts vague or poorly written banking queries into clear questions.
@@ -110,7 +111,7 @@ Rewritten Question:
         st.error(f"Error refining question: {e}")
         return raw_input
 
-# ✅ GPT Prompt Builder
+# ✅ Build Prompt
 def build_prompt(refined_query, detail_level):
     return f"""
 You are Bank Genie, an internal AI assistant designed only for bank employees. Your sole purpose is to answer banking-related queries clearly and accurately, tailored to the needs of internal banking teams.
@@ -173,25 +174,19 @@ def clear_all():
         st.session_state.pop(key, None)
     st.rerun()
 
-# ✅ Session Defaults
+# ✅ Session State
 st.session_state.setdefault("query", "")
 st.session_state.setdefault("detail_level", "Short")
 st.session_state.setdefault("answer", "")
 
-# ✅ App Layout
+# ✅ UI Layout
 st.markdown("<div class='container'>", unsafe_allow_html=True)
 st.markdown("<div class='title'>🏦 Bank Genie</div>", unsafe_allow_html=True)
 
-# ✅ Updated Subtitle (final)
-st.markdown("""
-<div class='subtitle' style='line-height: 1.8; text-align: center;'>
-    👋 <strong>Welcome to Bank Genie — Empowering Bank Teams with Instant, Multilingual Support</strong><br><br>
-    📞 For further assistance or support, feel free to call or 
-    <a href="https://wa.me/918830720742" target="_blank" style="text-decoration: none; color: #1d4ed8;"><strong>WhatsApp us at +91-8830720742</strong></a>.
-</div>
-""", unsafe_allow_html=True)
+# ✅ One-liner subtitle
+st.markdown("<div class='subtitle'>Internal assistant for Indian bank employees. Accurate. Instant. Professional.</div>", unsafe_allow_html=True)
 
-# ✅ Inputs
+# ✅ Input Area
 st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=130)
 st.session_state.detail_level = st.selectbox("📏 Choose Answer Format", ["Short", "Detailed"], index=0)
 
@@ -206,7 +201,7 @@ with col2:
         clear_all()
 st.markdown("</div>", unsafe_allow_html=True)
 
-# ✅ Output
+# ✅ Display Output
 if st.session_state.answer:
     st.markdown("### 🧾 Answer")
 

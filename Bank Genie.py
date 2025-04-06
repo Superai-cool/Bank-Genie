@@ -1,8 +1,9 @@
 import streamlit as st
 import openai
-import os
+from langchain.vectorstores import FAISS
+from langchain.embeddings import OpenAIEmbeddings
 
-# --- Secure API Key Loading ---
+# --- Load OpenAI Key Securely ---
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 # --- Streamlit Page Setup ---
@@ -20,38 +21,37 @@ with col1:
 with col2:
     clear = st.button("🧹 Clear")
 
-# --- Clear Functionality ---
+# --- Clear Handler ---
 if clear:
     st.session_state.query_input = ""
     st.experimental_rerun()
 
-# --- Keywords for Example Splitting ---
-example_keywords = ["Example:", "उदाहरण:", "उदाहरणार्थ:", "📌 Example:"]
+# --- Load FAISS Vector DB ---
+@st.cache_resource
+def load_kb_index():
+    return FAISS.load_local("bank_kb_index", OpenAIEmbeddings(), allow_dangerous_deserialization=True)
 
-def split_answer_example(response):
+db = load_kb_index()
+
+# --- Retrieve Context from KB ---
+def get_context_from_kb(query):
+    results = db.similarity_search(query, k=3)
+    return "\n\n".join([doc.page_content for doc in results]) if results else ""
+
+# --- Split Answer & Example ---
+example_keywords = ["Example:", "उदाहरण:", "📌 Example:"]
+
+def split_answer_example(text):
     for keyword in example_keywords:
-        if keyword in response:
-            parts = response.split(keyword, 1)
-            answer = parts[0].strip()
-            example = keyword + parts[1].strip()
-            return answer, example
-    return response.strip(), None
+        if keyword in text:
+            parts = text.split(keyword, 1)
+            return parts[0].strip(), keyword + parts[1].strip()
+    return text.strip(), None
 
-# --- Simulated Knowledge Base Context (replace with LangChain later) ---
-def get_context_from_kb(user_query):
-    if "working capital" in user_query.lower():
-        return """
-Working capital finance is a short-term funding provided by banks to meet day-to-day operational expenses like salaries, rent, raw materials, etc.
-It is not used for long-term investments. Example: A retail business might apply for working capital finance to buy stock ahead of a holiday season.
-"""
-    return ""
-
-# --- Answer Generation ---
+# --- Process Submission ---
 if submit and st.session_state.query_input.strip():
     query = st.session_state.query_input.strip()
     format_type = st.session_state.format_selector
-
-    # --- Get KB content ---
     kb_context = get_context_from_kb(query)
 
     if not kb_context:
@@ -61,18 +61,20 @@ if submit and st.session_state.query_input.strip():
         system_prompt = f"""
 You are Bank Genie, an assistant for Indian bank employees.
 
-ONLY use the following knowledge base content to answer the user's question. Do NOT use any outside knowledge or guess.
+ONLY answer using the knowledge base content provided below.
+Do not use external knowledge or guess.
 
-Knowledge Base:
+---
+KNOWLEDGE BASE:
 \"\"\"
 {kb_context}
 \"\"\"
+---
 
-Respond in this format only:
-✅ Answer: [Short or Detailed based on user request]
-📌 Example: [Only if found in knowledge base]
-
-If no answer or example is present in the knowledge base, clearly state that.
+Instructions:
+- Provide only factual responses found in the KB.
+- Use the format: ✅ Answer + 📌 Example (only if found).
+- If not found in KB, say: "Sorry, I couldn’t find relevant information in the knowledge base."
 """
 
         user_prompt = f"Question: {query}\nAnswer Format: {format_type}"
@@ -86,12 +88,11 @@ If no answer or example is present in the knowledge base, clearly state that.
                 ],
                 temperature=0.2
             )
-            result = response['choices'][0]['message']['content']
+            result = response["choices"][0]["message"]["content"]
             answer, example = split_answer_example(result)
 
             st.markdown("### ✅ Answer")
             st.success(answer)
-
             if example:
                 st.markdown("### 📌 Example")
                 st.info(example)
@@ -99,7 +100,7 @@ If no answer or example is present in the knowledge base, clearly state that.
         except openai.error.AuthenticationError:
             st.error("🚫 Authentication Error: Please check your OpenAI API key in Streamlit secrets.")
         except Exception as e:
-            st.error(f"⚠️ Unexpected Error: {e}")
+            st.error(f"⚠️ Error: {e}")
 
 # --- Footer ---
 st.markdown("---")

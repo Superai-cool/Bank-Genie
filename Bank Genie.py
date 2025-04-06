@@ -35,8 +35,6 @@ st.markdown("""
         font-size: 1rem;
     }
     .stButton>button {
-        background-color: #000000;
-        color: white;
         font-size: 16px;
         border-radius: 10px;
         padding: 10px 24px;
@@ -44,6 +42,14 @@ st.markdown("""
         width: 100%;
         border: none;
         margin-top: 10px;
+    }
+    .stButton > button:first-child {
+        background-color: #000000;
+        color: white;
+    }
+    .stButton > button:last-child {
+        background-color: #dc3545 !important;
+        color: white;
     }
     .custom-answer {
         font-size: 1rem;
@@ -67,6 +73,13 @@ if "response" not in st.session_state:
     st.session_state.response = None
 if "detail_level" not in st.session_state:
     st.session_state.detail_level = "Short"
+
+# ------------------ Clear App Function ------------------
+def clear_app():
+    for key in ["user_query", "response", "detail_level"]:
+        if key in st.session_state:
+            del st.session_state[key]
+    st.rerun()
 
 # ------------------ Header ------------------
 st.title("🏦 Bank Genie - Internal Q&A Assistant")
@@ -155,12 +168,22 @@ def get_bank_response(query):
 # ------------------ Input Field ------------------
 user_input = st.text_input("Ask your question (in any language):", value=st.session_state.user_query, max_chars=300)
 
-# ------------------ Ask Button ------------------
-if st.button("Ask to Bank Genie"):
-    if user_input.strip():
-        st.session_state.user_query = user_input
-        with st.spinner("Thinking like a banker..."):
-            st.session_state.response = get_bank_response(user_input)
+# ------------------ Buttons ------------------
+col1, col2 = st.columns([3, 1])
+with col1:
+    ask_btn = st.button("Ask to Bank Genie")
+with col2:
+    clear_btn = st.button("Clear")
+
+# ------------------ Clear Button Action ------------------
+if clear_btn:
+    clear_app()
+
+# ------------------ Ask Button Logic ------------------
+if ask_btn and user_input.strip():
+    st.session_state.user_query = user_input
+    with st.spinner("Thinking like a banker..."):
+        st.session_state.response = get_bank_response(user_input)
 
 # ------------------ Output ------------------
 if st.session_state.response:

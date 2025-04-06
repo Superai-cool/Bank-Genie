@@ -47,6 +47,7 @@ st.markdown("""
         font-weight: bold;
         width: 100%;
         border: none;
+        margin-top: 10px;
     }
     .custom-answer {
         font-size: 1rem;
@@ -63,6 +64,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# ------------------ Session State Initialization ------------------
+if "user_query" not in st.session_state:
+    st.session_state.user_query = ""
+if "response" not in st.session_state:
+    st.session_state.response = None
+if "detail_level" not in st.session_state:
+    st.session_state.detail_level = "Short"
+
 # ------------------ UI Header ------------------
 st.title("🏦 Bank Genie - Internal Q&A Assistant")
 st.markdown("""
@@ -73,8 +82,9 @@ Ask any bank-related question below.
 🔒 Non-banking queries will be politely declined.
 """)
 
-# ------------------ Answer Style Selector ------------------
-detail_level = st.radio("Choose answer detail level:", ["Short", "Detailed"], index=1)
+# ------------------ Dropdown for Detail Level ------------------
+detail_level = st.selectbox("Choose answer detail level:", ["Short", "Detailed"], index=0)
+st.session_state.detail_level = detail_level
 
 # ------------------ Prompt Template ------------------
 BANK_GENIE_PROMPT = """
@@ -148,22 +158,39 @@ def get_bank_response(query):
         return None
 
 # ------------------ Input ------------------
-user_query = st.text_input("Ask your question (in any language):", max_chars=300)
+st.session_state.user_query = st.text_input("Ask your question (in any language):", value=st.session_state.user_query, max_chars=300)
 
-# ------------------ Process & Output ------------------
-if user_query:
+# ------------------ Buttons ------------------
+col1, col2 = st.columns([3, 1])
+
+with col1:
+    ask_btn = st.button("Ask to Bank Genie")
+with col2:
+    clear_btn = st.button("Clear")
+
+# ------------------ Clear Function ------------------
+if clear_btn:
+    st.session_state.user_query = ""
+    st.session_state.response = None
+    st.experimental_rerun()
+
+# ------------------ Answer Generation ------------------
+if ask_btn and st.session_state.user_query.strip():
     with st.spinner("Thinking like a banker..."):
-        reply = get_bank_response(user_query)
-        if reply:
-            if "\n\n" in reply:
-                answer_part, example_part = reply.split("\n\n", 1)
-                example_part_cleaned = example_part.strip().removeprefix("Example:").strip()
-                st.markdown(f"""
-                <div class='custom-answer'>{answer_part.strip()}</div>
-                <div class='example-line'>💡 Example: {example_part_cleaned}</div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown(f"### ✅ Answer\n{reply}")
+        st.session_state.response = get_bank_response(st.session_state.user_query)
+
+# ------------------ Output ------------------
+if st.session_state.response:
+    reply = st.session_state.response
+    if "\n\n" in reply:
+        answer_part, example_part = reply.split("\n\n", 1)
+        example_part_cleaned = example_part.strip().removeprefix("Example:").strip()
+        st.markdown(f"""
+        <div class='custom-answer'>{answer_part.strip()}</div>
+        <div class='example-line'>💡 Example: {example_part_cleaned}</div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"### ✅ Answer\n{reply}")
 
 # ------------------ Footer ------------------
 st.markdown("""

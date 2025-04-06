@@ -78,12 +78,11 @@ if "detail_level" not in st.session_state:
 # ------------------ UI Header ------------------
 st.title("🏦 Bank Genie - Internal Q&A Assistant")
 st.markdown("""
-👋 Welcome to **Bank Genie** — Empowering Bank Teams with Instant, Multilingual Support
-.
+👋 Welcome to **Bank Genie** — Empowering Bank Teams with Instant, Multilingual Support.
 
 💬 Ask any bank-related question below, and Bank Genie will provide accurate, helpful answers tailored to your preference — whether concise or in-depth.
 
-📞 For further assistance or support, feel free to **call or WhatsApp** us at +91-8830720742..
+📞 For further assistance or support, feel free to call or WhatsApp us at +91-8830720742.
 """)
 
 # ------------------ Dropdown for Detail Level ------------------
@@ -160,8 +159,16 @@ def get_bank_response(query):
         st.error(f"❌ GPT Error: {e}")
         return None
 
-# ------------------ Input Field ------------------
-st.session_state.user_query = st.text_input("Ask your question (in any language):", value=st.session_state.user_query, max_chars=300)
+# ------------------ Input Field (Wrapped in Placeholder) ------------------
+input_placeholder = st.empty()
+
+with input_placeholder:
+    st.session_state.user_query = st.text_input(
+        "Ask your question (in any language):",
+        value=st.session_state.user_query,
+        max_chars=300,
+        key="question_input"
+    )
 
 # ------------------ Action Buttons ------------------
 col1, col2 = st.columns([3, 1])
@@ -174,13 +181,15 @@ with col2:
 if clear_btn:
     st.session_state.user_query = ""
     st.session_state.response = None
+    input_placeholder.empty()
+    input_placeholder.text_input("Ask your question (in any language):", value="", key="question_input")
 
-# ------------------ Get Answer ------------------
+# ------------------ Generate Answer ------------------
 if ask_btn and st.session_state.user_query.strip():
     with st.spinner("Thinking like a banker..."):
         st.session_state.response = get_bank_response(st.session_state.user_query)
 
-# ------------------ Output ------------------
+# ------------------ Show Output ------------------
 if st.session_state.response:
     reply = st.session_state.response
     if "\n\n" in reply:
@@ -196,5 +205,7 @@ if st.session_state.response:
 # ------------------ Footer ------------------
 st.markdown("""
 ---
-<center><small>🔐 For internal banking use only | Powered by SuperAI Labs</small></center>
+<div style="text-align:center">
+<small>🔐 For internal banking use only | Powered by SuperAI Labs</small>
+</div>
 """, unsafe_allow_html=True)

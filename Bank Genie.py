@@ -6,7 +6,7 @@ import random
 # ✅ Set Page Config
 st.set_page_config(page_title="🏦 Bank Genie", layout="centered")
 
-# ✅ Styles (same as before — floating buttons + styled text box)
+# ✅ Global Styles
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
@@ -38,16 +38,6 @@ st.markdown("""
         border-color: #2563eb !important;
         box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
         outline: none !important;
-    }
-    .response-box {
-        background-color: #f9fafb;
-        border: 1px solid #e5e7eb;
-        padding: 1rem;
-        margin-top: 1.5rem;
-        border-radius: 8px;
-        font-size: 1rem;
-        line-height: 1.6;
-        white-space: pre-wrap;
     }
     .button-row {
         display: flex;
@@ -83,20 +73,20 @@ st.markdown("""
 # ✅ OpenAI API Key
 openai.api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 
-# ✅ Helper: Rewrites single words or incorrect questions
+# ✅ Auto-fix: Single-word and grammar
 def refine_query(raw_input):
     prompt = f"""
-You are a helper tool that improves user input before passing it to a banking assistant.
+You are a helper that converts vague or poorly written banking queries into clear questions.
 
-If input is:
-- A single banking-related keyword (like "loan", "savings"), rewrite it as a meaningful question.
-- Poorly formed or grammatically incorrect, rewrite it into a proper banking-related question.
-- Already correct, return it as-is.
+If the input is:
+- A single banking word like "loan" → expand into a proper question.
+- Grammatically incorrect or unclear → fix it.
+- Already good → return as is.
 
 INPUT:
 \"\"\"{raw_input}\"\"\"
 
-IMPROVED QUESTION:
+Rewritten Question:
 """
     try:
         response = openai.ChatCompletion.create(
@@ -108,9 +98,9 @@ IMPROVED QUESTION:
         return response['choices'][0]['message']['content'].strip()
     except Exception as e:
         st.error(f"Error refining question: {e}")
-        return raw_input  # fallback
+        return raw_input
 
-# ✅ Bank Genie Prompt Builder
+# ✅ Build Bank Genie Prompt
 def build_prompt(refined_query, detail_level):
     detail_addon = {
         "Short": "- Give a short, summarized answer (1–3 lines)\n- Include 1 simple real-life example (use Indian context and INR)",
@@ -146,7 +136,7 @@ def generate_answer():
         return
 
     refined_query = refine_query(raw_input)
-    st.session_state.query = refined_query  # update UI with improved version
+    st.session_state.query = refined_query
 
     prompt = build_prompt(refined_query, st.session_state.detail_level)
     try:
@@ -160,7 +150,7 @@ def generate_answer():
     except Exception as e:
         st.error(f"Error generating answer: {e}")
 
-# ✅ Clear Inputs
+# ✅ Clear All
 def clear_all():
     for key in ["query", "detail_level", "answer"]:
         st.session_state.pop(key, None)
@@ -171,7 +161,7 @@ st.session_state.setdefault("query", "")
 st.session_state.setdefault("detail_level", "Short")
 st.session_state.setdefault("answer", "")
 
-# ✅ UI Layout
+# ✅ App UI
 st.markdown("<div class='container'>", unsafe_allow_html=True)
 st.markdown("<div class='title'>🏦 Bank Genie</div>", unsafe_allow_html=True)
 st.markdown("<div class='subtitle'>Internal assistant for Indian bank employees. Accurate. Instant. Professional.</div>", unsafe_allow_html=True)
@@ -179,7 +169,7 @@ st.markdown("<div class='subtitle'>Internal assistant for Indian bank employees.
 st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=130)
 st.session_state.detail_level = st.selectbox("📏 Choose Answer Format", ["Short", "Detailed"], index=0)
 
-# ✅ Buttons
+# ✅ Action Buttons
 st.markdown("<div class='button-row'>", unsafe_allow_html=True)
 col1, col2 = st.columns(2)
 with col1:
@@ -190,10 +180,28 @@ with col2:
         clear_all()
 st.markdown("</div>", unsafe_allow_html=True)
 
-# ✅ Answer Output
+# ✅ Output: Answer + Example
 if st.session_state.answer:
-    st.markdown("### ✅ Suggested Answer")
-    st.markdown(f"<div class='response-box'>{st.session_state.answer}</div>", unsafe_allow_html=True)
+    st.markdown("### 🧾 Answer")
+
+    parts = st.session_state.answer.strip().split("\n\n", 1)
+    main_answer = parts[0]
+    example_part = parts[1] if len(parts) > 1 else ""
+
+    st.markdown(f"""
+    <div style='background-color:#f9fafb; border:1px solid #e5e7eb; padding: 1.25rem; border-radius: 10px;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.06); font-size: 1rem; margin-bottom: 1.2rem;'>
+        {main_answer}
+    </div>
+    """, unsafe_allow_html=True)
+
+    if example_part:
+        st.markdown(f"""
+        <div style='background-color:#eef2ff; border:1px solid #c7d2fe; padding: 1.25rem; border-radius: 10px;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.05); font-size: 1rem;'>
+            {example_part}
+        </div>
+        """, unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
 

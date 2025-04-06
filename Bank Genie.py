@@ -6,79 +6,97 @@ import random
 # Set OpenAI API Key
 openai.api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 
-# Streamlit App Config
-st.set_page_config(page_title="🏦 Bank Genie", layout="centered")
+# Streamlit Page Config
+st.set_page_config(page_title="🏦 Bank Genie", layout="centered", initial_sidebar_state="collapsed")
 
-# ✅ Open Graph Meta Tags
-st.markdown("""
-    <head>
-        <meta property="og:title" content="Bank Genie - Internal Banking Q&A Assistant" />
-        <meta property="og:description" content="Ask internal banking questions in your preferred language and get context-rich answers tailored for Indian banking." />
-        <meta property="og:image" content="https://yourdomain.com/bankgenie-preview.png" />
-    </head>
-""", unsafe_allow_html=True)
-
-# ✅ Global Styles
+# 🔥 Global Style Overrides - Mobile-First & Floating Buttons
 st.markdown("""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
         html, body, [class*="css"] {
-            font-family: 'Poppins', sans-serif !important;
+            font-family: 'Poppins', sans-serif;
         }
         body {
-            background-color: #f8fafc;
+            background-color: #f0f4f8;
         }
-        .block-container {
-            max-width: 720px;
+
+        .main-container {
+            max-width: 640px;
             margin: auto;
-            padding-top: 2rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
         }
+
         h1 {
             text-align: center;
-            color: #1e293b;
-            font-size: 2.5rem;
+            font-size: 2rem;
+            color: #1e3a8a;
             margin-bottom: 0.2rem;
         }
+
         .subtitle {
             text-align: center;
             color: #475569;
-            font-size: 1.1rem;
+            font-size: 1rem;
             margin-bottom: 1.5rem;
         }
+
         .response-box {
-            background-color: #ffffff;
-            padding: 1.5rem;
+            background-color: #f9fafb;
+            padding: 1.25rem;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            font-size: 1.05rem;
-            line-height: 1.6;
-            white-space: pre-wrap;
-            margin-top: 1rem;
-        }
-        .btn-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 1rem;
-            flex-wrap: wrap;
-            margin-top: 1.25rem;
-        }
-        .btn-row button {
-            width: 100%;
-            flex: 1;
-            padding: 0.7rem;
             font-size: 1rem;
-            border-radius: 8px;
+            line-height: 1.6;
+            margin-top: 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .floating-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-direction: column;
+        }
+
+        .floating-buttons button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 10px;
             border: none;
-            color: white;
+            width: 100%;
         }
+
         .generate-btn {
-            background-color: #0284c7;
+            background-color: #1d4ed8 !important;
+            color: white !important;
         }
+
         .clear-btn {
-            background-color: #dc2626;
+            background-color: #dc2626 !important;
+            color: white !important;
+        }
+
+        @media (min-width: 600px) {
+            .floating-buttons {
+                flex-direction: row;
+            }
+            .floating-buttons button {
+                width: auto;
+            }
         }
     </style>
 """, unsafe_allow_html=True)
+
+# 🔄 Session State Defaults
+st.session_state.setdefault("query", "")
+st.session_state.setdefault("detail_level", "Short")
+st.session_state.setdefault("language", "English")
+st.session_state.setdefault("answer", "")
 
 # 🧠 Prompt Builder
 def build_prompt(query, detail_level, lang):
@@ -112,7 +130,7 @@ QUERY:
 \"\"\"{query}\"\"\"
 """
 
-# 🚀 Generate Answer
+# 🧠 Answer Generator
 def generate_answer():
     prompt = build_prompt(st.session_state.query, st.session_state.detail_level, st.session_state.language)
     try:
@@ -127,61 +145,52 @@ def generate_answer():
         st.error(f"Error: {e}")
         st.session_state.answer = ""
 
-# 🧼 Clear App
+# 🧼 Clear
 def clear_app():
     for key in ["query", "detail_level", "language", "answer"]:
-        if key in st.session_state:
-            del st.session_state[key]
+        st.session_state.pop(key, None)
     st.rerun()
 
-# 🔄 Session Defaults
-st.session_state.setdefault("query", "")
-st.session_state.setdefault("detail_level", "Short")
-st.session_state.setdefault("language", "English")
-st.session_state.setdefault("answer", "")
+# 🌟 UI Components
+with st.container():
+    st.markdown("<div class='main-container'>", unsafe_allow_html=True)
 
-# 💬 Title + Subtitle
-st.markdown("<h1>🏦 Bank Genie</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>🏦 Bank Genie</h1>", unsafe_allow_html=True)
+    st.markdown("<div class='subtitle'>Smart Q&A assistant for Indian banking staff. Multilingual. Instant. Accurate.</div>", unsafe_allow_html=True)
+
+    st.session_state.query = st.text_area("🔍 Ask a bank-related question", value=st.session_state.query, height=120)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.session_state.detail_level = st.radio("📏 Answer Format", ["Short", "Detailed"], index=["Short", "Detailed"].index(st.session_state.detail_level))
+    with col2:
+        st.session_state.language = st.selectbox("🌐 Language", ["English", "Hindi", "Marathi", "Kannada", "Tamil"], index=0)
+
+    # 🔘 Buttons: Generate + Clear
+    st.markdown("<div class='floating-buttons'>", unsafe_allow_html=True)
+    colA, colB = st.columns(2)
+    with colA:
+        if st.button("💡 Generate Answer", type="primary"):
+            if st.session_state.query.strip():
+                generate_answer()
+            else:
+                st.warning("Please enter a bank-related question.")
+    with colB:
+        if st.button("🧹 Clear"):
+            clear_app()
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # ✅ Answer Output
+    if st.session_state.answer:
+        st.markdown("### ✅ Suggested Answer")
+        st.markdown(f"<div class='response-box'>{st.session_state.answer}</div>", unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# 👣 Footer
 st.markdown("""
-<div class='subtitle'>
-Your internal AI assistant for quick, context-aware responses to banking questions.<br>
-Available in English, Hindi, Marathi & more.
-</div>
-""", unsafe_allow_html=True)
-
-# 📝 Query Input
-st.session_state.query = st.text_area("🔍 Enter your bank-related question", value=st.session_state.query, height=130)
-
-# 🎯 Options
-col1, col2 = st.columns(2)
-with col1:
-    st.session_state.detail_level = st.radio("📏 Answer Detail", ["Short", "Detailed"], index=["Short", "Detailed"].index(st.session_state.detail_level))
-with col2:
-    st.session_state.language = st.selectbox("🌐 Preferred Language", ["English", "Hindi", "Marathi", "Kannada", "Tamil"], index=0)
-
-# 🚦 Action Buttons
-st.markdown('<div class="btn-row">', unsafe_allow_html=True)
-c1, c2 = st.columns(2)
-with c1:
-    if st.button("💡 Generate Answer", key="gen"):
-        if st.session_state.query.strip():
-            generate_answer()
-        else:
-            st.warning("Please enter a valid banking question.")
-with c2:
-    if st.button("🧹 Clear", key="clear"):
-        clear_app()
-st.markdown('</div>', unsafe_allow_html=True)
-
-# ✅ Show Answer
-if st.session_state.answer:
-    st.markdown("### ✅ Suggested Answer")
-    st.markdown(f"<div class='response-box'>{st.session_state.answer}</div>", unsafe_allow_html=True)
-
-# 🌟 Footer
-st.markdown("""
-<hr style='margin-top: 3rem; margin-bottom: 1rem;'>
-<div style='text-align: center; font-size: 0.9rem; color: #6b7280;'>
-🔐 Built with ❤️ by <strong>SuperAI Labs</strong> — Banking Knowledge, AI-Powered.
-</div>
+    <hr style='margin-top: 2.5rem;'>
+    <div style='text-align: center; font-size: 0.85rem; color: #6b7280;'>
+        🔐 Powered by <strong>SuperAI Labs</strong> • Tailored for Indian Banks 🇮🇳
+    </div>
 """, unsafe_allow_html=True)
